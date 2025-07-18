@@ -1,0 +1,9 @@
+npm install express http2 http2-express-bridge
+	Express doesn’t natively support Node’s http2 module, but you can bridge it:
+	const bridge = require('http2-express-bridge');
+	const app = bridge(express);					
+
+					or 
+npm install express spdy
+	this one has some depreciation
+

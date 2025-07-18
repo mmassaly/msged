@@ -1,0 +1,73 @@
+*****************************************************************************
+This command uses OpenSSL to generate a new RSA private key.
+Here's what each part means:
+
+
+openssl genrsa -out server.key 2048
+
+
+Part of Command	    Meaning
+***************     ***********
+openssl	            Invokes the OpenSSL command-line tool
+genrsa	            Tells OpenSSL to generate an RSA private key
+-out server.key	    Specifies the output file name for the private key (server.key)
+2048	            Defines the key size in bits — 2048 is a standard, secure length
+
+
+
+*******************************************************************************
+explain 
+openssl req -new -key server.key -out server.csr
+
+This command is used to generate a Certificate Signing Request (CSR) using an existing private key. It's a key step when you're requesting an SSL certificate from a Certificate Authority (CA)—or even generating one for internal use.
+
+
+Component	Description
+********    ***********
+openssl	    Invokes the OpenSSL toolkit
+req	        Indicates you're using the certificate request (X.509) functionality
+-new	    Tells OpenSSL to generate a new CSR
+-key        server.key	Specifies the private key to sign the request (generated previously)
+-out        server.csr	The file where the generated CSR will be saved
+
+**********************************************************************************
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt -extensions req_ext -extfile localhost.cnf
+
+It creates an X.509 digital certificate (commonly used for HTTPS) by self-signing a Certificate Signing Request (CSR) with your private key.
+
+
+Part	            What It Means
+********            ***********
+openssl	            Launches the OpenSSL tool
+x509	            Specifies you're working with X.509 certificates
+-req	            tells OpenSSL you're processing a certificate request (CSR)
+-days 365	        Sets the certificate's validity period (1 year in this case)
+-in server.csr	    The input CSR file (generated earlier with openssl req)
+-signkey server.key	Uses your private key to digitally sign the certificate
+-out server.crt	    Specifies the output certificate file
+**********************************************************************************
+
+On Windows do this 
+user cermgr to approve then select action then import certificate in the path (.cert) file
+
+✅ Option 2: Trust the Certificate Locally
+You can add your self-signed cert to your system’s trusted root store:
+
+On Windows: Use certmgr.msc to import server.crt into Trusted Root Certification Authorities
+
+On macOS: Use Keychain Access → drag server.crt into System → Certificates → set to “Always Trust”
+
+On Linux: Copy to /usr/local/share/ca-certificates/ and run sudo update-ca-certificates
+
+
+***********************************************************************************
+# 🔑 Step 1: Generate private key
+openssl genrsa -out server.key 2048
+
+# 📄 Step 2: Create CSR using the config file with SAN
+openssl req -new -key server.key -out server.csr -config localhost.cnf
+
+# 🔐 Step 3: Self-sign the cert with SAN extension
+openssl x509 -req -days 365 \
+  -in server.csr -signkey server.key -out server.crt \
+  -extensions req_ext -extfile localhost.cnf
