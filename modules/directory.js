@@ -104,7 +104,7 @@ router.get('/file', authenticateToken, (req, res) => {
    const mimeType = mime.lookup(filePath);
    //res.setHeader({'Content-Type':mimeType}); //causes issues in clients view
    res.set('Content-Type',mimeType);
-   res.set('Content-Length',readFile(filePath));
+   res.set('Content-Length',readSize(filePath));
    console.log(filePath);
    /*
    res.write(readFile(filePath));
