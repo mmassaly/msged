@@ -40,6 +40,14 @@ function mapDirectory(pathPrefix,folderPath,parentPath) {
   
     return mappedDirectory;
   }
+function readSize(path)
+{
+    if(fs.existsSync(path))
+    {
+       return  fs.statSync(path).size;
+    }
+    return undefined;
+}
 function readFile(path)
 {
     if(fs.existsSync(path))
@@ -96,6 +104,7 @@ router.get('/file', authenticateToken, (req, res) => {
    const mimeType = mime.lookup(filePath);
    //res.setHeader({'Content-Type':mimeType}); //causes issues in clients view
    res.set('Content-Type',mimeType);
+   res.set('Content-Length',readFile(filePath));
    console.log(filePath);
    /*
    res.write(readFile(filePath));
