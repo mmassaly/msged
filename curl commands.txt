@@ -1,3 +1,24 @@
-curl -X POST https://localhost:3039/api/data \
+curl -X POST http://51.38.190.202:3039/api/data \
   -H "Content-Type: application/json" \
-  -d '{"message":"Hello from HTTP/2"}' -k
+  -d '{"username":"MMDev-39", "password":"mpwd"}'
+
+curl -X POST  -h "Content-Type: application/json" -d "username=MMDev-39&&password=mpwd" http://51.38.190.202:3039/api/data
+
+
+curl -X POST http://localhost:3039/api/authentifications/login -H "Content-Type: application/json" -d '{"username":"MMDev-39", "password":"mpwd"}'
+
+
+curl -X POST http://51.38.190.202:3039/api/authentifications/login -H "Content-Type: application/json" -d '{"username":"MMDev-39", "password":"mpwd"}'
+
+**********************************************
+Simple and direct—great for one-off transfers.
+scp /path/to/local/file username@remote_host:/path/to/remote/destination
+
+
+- To copy a directory:
+scp -r /local/folder username@remote_host:/remote/folder
+
+
+- Add -P <port> if your SSH server uses a non-default port.
+
+**************************************************

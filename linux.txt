@@ -1,0 +1,41 @@
+PORT OPENING
+**************************
+sudo ufw allow 3039/tcp
+sudo ufw status
+
+***********************
+sudo firewall-cmd --permanent --add-port=3039/tcp
+sudo firewall-cmd --reload
+
+**********************
+ Remove an Empty Directory
+rmdir directory_name
+
+
+- Only works if the directory is completely empty.
+- Safe and simple.
+
+🧨 Remove a Directory with Contents
+rm -r directory_name
+
+
+- -r stands for recursive, so it deletes all files and subdirectories inside.
+- Add -f to force deletion without confirmation:
+rm -rf directory_name
+
+**********************
+
+scp -r  "C:/Users/hp/Documents/GitHub/React-MSGEDFileSystem/FileDirServer/principal" ubuntu@51.38.190.202:~/documents/msged
+
+
+🧪 Example
+rm -rf ~/documents/msged
+
+
+This will delete the msged folder inside your documents directory, along with everything inside it.
+
+⚠️ Be Careful!
+- rm -rf / is infamous—it deletes everything. Never run it unless you're absolutely sure.
+- You can use ls directory_name first to inspect contents before deleting.
+
+Want help scripting safe deletions, or setting up a trash-like recovery system before removing things permanently? I’ve got some neat tricks for that too.

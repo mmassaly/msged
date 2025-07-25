@@ -1,0 +1,7 @@
+sudo npm install -g pm2
+pm2 start server.js
+pm2 save
+pm2 startup
+**************************
+[PM2] Remove init script via:
+$ pm2 unstartup systemd

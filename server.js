@@ -15,6 +15,7 @@ app.locals.users = []; // Temporary in-memory user storage
 app.locals.sessions = [];
 app.locals.roomDic = process.env.roomDic;
 app.locals.secretKey = process.env.JWT_SECRET;
+app.locals.secretPassword = process.env.SECRET_PASSWORD;
 
 const usersStr = directoryRoutes.readFile("./modules/Data/users.json");
 if(usersStr !== undefined)

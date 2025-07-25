@@ -142,6 +142,7 @@ router.post('/', authenticateToken, (req, res) => {
         const uploadPath = path.join("./",parent.path,name);
         console.log(parent.path);
         console.log(uploadPath);
+        
         if( !req.app.locals.roomDic[uploadPath] )
         {
            req.app.locals.roomDic[uploadPath] = uploadPath.split(path.sep).reduce((acc,current,index)=> {acc.push(current);
@@ -194,6 +195,7 @@ router.post('/', authenticateToken, (req, res) => {
     else {
         const uploadPath = path.join("./", 'principal',name);
         req.app.locals.roomDic[uploadPath] =[uploadPath];
+        
         if(name!= "principal")
             req.app.locals.roomDic[uploadPath].push("principal");
         try{

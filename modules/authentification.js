@@ -7,19 +7,27 @@ router.use(express.json());
 const intervals = [];
 // Signup route
 router.post('/signup', async (req, res) => {
-  const { name,username, password,room,identifier } = req.body;
+  const { name,username, password,room,identifier,accessType,accessPassword } = req.body;
   console.log(password);
+  if(accessType && accessType == "secret" && req.secretPassword != accessPassword)
+  {
+    return res.status(400).json({ message: 'Le mot de passe pour le type top secret ne correspond pas' });
+  }
+  else if (!accessType || accessType == "basic")
+  {
+    return res.status(400).json({ message: 'Chemin invalide.' });
+  }
   // Check if user already exists
   const existingUser = req.app.locals.users.find(user => user.username === username);
   if (existingUser) {
-    return res.status(400).json({ message: 'User already exists' });
+    return res.status(400).json({ message: "L'utilisateur existe déjà" });
   }
 
   // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Store user
-  req.app.locals.users.push({ name,username, password: hashedPassword,room:room,identifier });
+  req.app.locals.users.push({ name,username, password: hashedPassword,room:room,identifier,type:accessType,accessPassword });
   const users = JSON.stringify(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json",users);
   res.status(200).json({ message: 'User registered successfully' });
@@ -50,10 +58,18 @@ router.post('/login', async (req, res) => {
   const newSession = {username:username, password:password, currentToken:token, oldToken: previousToken, room: user.room,commands:[]};
 
   const timeoutValue = setTimeout(()=>{newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
-  intervals.push({interval:timeoutValue,session:newSession});
   /*console.log("************BEFORE************");
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
+
+  if( req.app.locals.sessions.
+    find(session => session.currentToken == newSession.currentToken && session.oldToken == newSession.oldToken &&
+      session.username == newSession.username &&  session.password == newSession.password && session.room == newSession.room) == undefined )
+  { 
+    req.app.locals.sessions.push(newSession);
+    intervals.push({interval:timeoutValue,session:newSession});
+  }
+
   if(previousToken)
   {
     const index = req.app.locals.sessions.findIndex( session => session.currentToken == previousToken );
@@ -77,11 +93,11 @@ router.post('/login', async (req, res) => {
     console.log(previousToken);
     
   }
-  req.app.locals.sessions.push(newSession);
+  
   /*console.log("************AFTER************");
     console.log(req.app.locals.sessions);
   console.log("**********AFTER**************");*/
-  res.status(200).json({ message: 'Login successful', token,room:user.room });
+  res.status(200).json({ message: 'Login successful', token,room:user.room,secret:user.accessType == "secret" });
 });
 
 // Protected route example
