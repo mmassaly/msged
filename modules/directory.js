@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const roomUpdates = require('./roomUtil');
 const router = express.Router();
-const mime = require('mime');
+const mime = require('mime-types');
 router.use(express.json());
 // In-memory storage for demonstration purposes
 
@@ -105,8 +105,10 @@ router.get('/', authenticateToken, (req, res) => {
 router.get('/file', authenticateToken, (req, res) => {
    const filePath = path.join('./',req.query.path);
    const mimeType = mime.lookup(filePath);
+   console.log(mimeType);
+   //mime.getType(filePath) causes issues
    //res.setHeader({'Content-Type':mimeType}); //causes issues in clients view
-   res.set('Content-Type',mime.getType(filePath));
+   res.set('Content-Type',mimeType);
    res.set('Content-Length',readSize(filePath));
    console.log(filePath);
    /*
