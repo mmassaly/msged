@@ -13,9 +13,12 @@ const { type } = require('os');
 // Function to read a directory and map its structure
 function mapDirectory(pathPrefix,folderPath,parentPath) {
     var dirrectory = path.join(pathPrefix,parentPath,folderPath);
+    
     const exists = fs.existsSync(dirrectory);
     if(!exists)
     {
+        console.trace(dirrectory);
+        console.log(dirrectory+" does not exist ");
         fs.mkdirSync(dirrectory);
     }
     const stats = fs.statSync(dirrectory);
