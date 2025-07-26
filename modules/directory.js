@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const roomUpdates = require('./roomUtil');
 const router = express.Router();
-const mime = require('mime-types');
+const mime = require('mime');
 router.use(express.json());
 // In-memory storage for demonstration purposes
 
