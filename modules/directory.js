@@ -13,7 +13,7 @@ const fs = require('fs');
 function mapDirectory(pathPrefix,folderPath,parentPath,req) {
     var dirrectory = path.join(pathPrefix,parentPath,folderPath);
     const exists = fs.existsSync(dirrectory);
-    console.log(req.app.locals.secretFolders);
+  
     if(!exists)
     {
         fs.mkdirSync(dirrectory);
@@ -38,7 +38,8 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req) {
         mapDirectory(pathPrefix,item,path.join(parentPath,folderPath),req)
       );
     }
-  
+    
+    RecursiveSplitTest2(pathstr,req.app.locals.roomDic);
     return mappedDirectory;
   }
 function readSize(path)
