@@ -35,7 +35,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
     if (mappedDirectory.isDirectory) {
       const items = fs.readdirSync(dirrectory);
       mappedDirectory.subdirectories = items.map(item =>
-        mapDirectory(pathPrefix,item,path.join(parentPath,folderPath),req)
+        mapDirectory(pathPrefix,item,path.join(parentPath,folderPath),req,start)
       );
     }
     if(start)
