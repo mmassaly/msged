@@ -335,7 +335,6 @@ var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
         }
     });
     const returnValue = Object.fromEntries(Object.entries(roomDic).filter(([_,value]) => value !== undefined));
-    console.log(returnValue);
     if(!returnValue[newPath])
     {
         RecursiveSplitTest2(newPath,returnValue);

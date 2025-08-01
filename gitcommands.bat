@@ -11,3 +11,8 @@ git push -u origin mmain
 git remote add origin https://github.com/mmassaly/msged.git
 git branch -M mmain
 git push -u origin mmain
+
+
+when you got problems 
+git fetch origin
+git reset --hard origin/<branch-name>
