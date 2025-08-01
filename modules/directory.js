@@ -10,7 +10,7 @@ router.use(express.json());
 const fs = require('fs');
 
 // Function to read a directory and map its structure
-function mapDirectory(pathPrefix,folderPath,parentPath,req) {
+function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
     var dirrectory = path.join(pathPrefix,parentPath,folderPath);
     const exists = fs.existsSync(dirrectory);
   
@@ -38,8 +38,8 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req) {
         mapDirectory(pathPrefix,item,path.join(parentPath,folderPath),req)
       );
     }
-    
-    RecursiveSplitTest2(pathstr,req.app.locals.roomDic);
+    if(start)
+        RecursiveSplitTest2(mappedDirectory.path,req.app.locals.roomDic);
     return mappedDirectory;
   }
 function readSize(path)
@@ -209,7 +209,7 @@ router.post('/', authenticateToken, (req, res) => {
     const {room,name, parentPath } = req.body;
     //console.log(room);
     //console.log(name);console.log(parentPath);
-    var directories =  mapDirectory("./","principal","",req);
+    var directories =  mapDirectory("./","principal","",req,true);
     if (parentPath) 
     {
         const parent =  recursiveFindDir(directories,parentPath);
