@@ -98,7 +98,7 @@ router.get('/', authenticateToken, (req, res) => {
     console.log(req.user);console.log(req.session);
     const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
     ,req.session.room.replaceAll("\\",path.sep).startsWith("principal")? '':'principal'
-    ,req);
+    ,req,true);
     console.log(directories);
     console.log(req.app.locals.roomDic);
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
@@ -209,7 +209,7 @@ router.post('/', authenticateToken, (req, res) => {
     const {room,name, parentPath } = req.body;
     //console.log(room);
     //console.log(name);console.log(parentPath);
-    var directories =  mapDirectory("./","principal","",req,true);
+    var directories =  mapDirectory("./","principal","",req);
     if (parentPath) 
     {
         const parent =  recursiveFindDir(directories,parentPath);
@@ -294,6 +294,7 @@ router.post('/', authenticateToken, (req, res) => {
 
 var RecursiveSplitTest2 = (pathstr,roomDic)=>
 {
+    console.log(pathstr +" is going into ");console.log(roomDic);
     var arr = pathstr.split(path.sep);
     let length = arr.length-1;
     if(length == 0)
