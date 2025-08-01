@@ -29,8 +29,6 @@ const roomDicStr = directoryRoutes.readFile("./modules/Data/roomDic.json");
 if(roomDicStr !== undefined)
 {
     app.locals.roomDic = JSON.parse(roomDicStr);
-    directoryRoutes.mapDirectory("./","principal","",{app},true);
-    fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(app.locals.roomDic));    
     console.log(app.locals.roomDic);
 }
 else
@@ -60,7 +58,9 @@ app.use(cors({
     allowedHeaders: ["Authorization", "Content-Type"],
 }));
 
-
+directoryRoutes.mapDirectory("./","principal","",{app},true);
+fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(app.locals.roomDic));    
+    
 // File upload routes
 app.use('/api/upload', fileUploadRoutes);
 
