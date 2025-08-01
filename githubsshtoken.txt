@@ -1,1 +1,3 @@
 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
+
+git pull https://<username>:<token>@github.com/<username>/<repo>.git

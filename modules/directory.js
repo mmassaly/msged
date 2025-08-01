@@ -1,29 +1,27 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const roomUpdates = require('./roomUtil');
+const path = require('path');
 const router = express.Router();
 const mime = require('mime-types');
 router.use(express.json());
 // In-memory storage for demonstration purposes
 
 const fs = require('fs');
-const path = require('path');
-const { type } = require('os');
 
 // Function to read a directory and map its structure
-function mapDirectory(pathPrefix,folderPath,parentPath) {
+function mapDirectory(pathPrefix,folderPath,parentPath,req) {
     var dirrectory = path.join(pathPrefix,parentPath,folderPath);
-    console.trace(dirrectory); console.trace(folderPath);
-    console.log("********************************************")
     const exists = fs.existsSync(dirrectory);
+    console.log(req.app.locals.secretFolders);
     if(!exists)
     {
-        console.log(dirrectory+" does not exist ");
         fs.mkdirSync(dirrectory);
     }
     const stats = fs.statSync(dirrectory);
     const mappedDirectory = {
       name: path.basename(folderPath),
+      isSecret: req?req.app.locals.secretFolders.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
       date: stats.mtime, // Last modified date
       year:stats.isDirectory()?undefined:stats.mtime.getFullYear(),
       isDirectory: stats.isDirectory(),
@@ -37,7 +35,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath) {
     if (mappedDirectory.isDirectory) {
       const items = fs.readdirSync(dirrectory);
       mappedDirectory.subdirectories = items.map(item =>
-        mapDirectory(pathPrefix,item,path.join(parentPath,folderPath))
+        mapDirectory(pathPrefix,item,path.join(parentPath,folderPath),req)
       );
     }
   
@@ -97,8 +95,11 @@ const authenticateToken = (req, res, next) => {
 // Fetch directories
 router.get('/', authenticateToken, (req, res) => {
     console.log(req.user);console.log(req.session);
-    const directories =  mapDirectory("./",req.session.room.replaceAll("\\","/"),req.session.room.replaceAll("\\","/").startsWith("principal")? '':'principal');
+    const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
+    ,req.session.room.replaceAll("\\",path.sep).startsWith("principal")? '':'principal'
+    ,req);
     console.log(directories);
+    console.log(req.app.locals.roomDic);
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     res.json(directories);
 });
@@ -141,14 +142,73 @@ router.get('/officefile', (req, res) => {
     }
    console.log("done");
 });
+router.post('/renameFolder',authenticateToken,(req,res)=>{
+    const {oldPath,parentPath,name} = req.body;
+    var newPath = path.join('./',parentPath.replaceAll('\\',path.sep).replaceAll('/',path.sep),name);
+    console.log("Renaming folder from "+oldPath+" to "+newPath);
+   
+    if(fs.existsSync(newPath) && oldPath == newPath)
+    {
+        res.status(400).json({message:"Ce document existe déjà."});
+        return;
+    }
+    try{
+        fs.renameSync(oldPath,newPath);
+        req.app.locals.roomDic = RenameRoomsContainingOldPathWithNewPath(oldPath,newPath,req.app.locals.roomDic);
+        req.app.locals.secretFolders = RenameRoomsContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
+        writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));   
+        writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
+        var command ={entryparams:{fieldName:"directories",operation:"rename_directory"},command:{oldPath:oldPath,path:newPath,name:path.basename(newPath),isDirectory:true,parentPath:path.dirname(newPath)}};
+        roomUpdates(req,newPath,command);
+        fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
+        res.json({message:"Dossier renomé avec success!"});
+    }catch(err)
+    {
+        console.log(req.app.locals.roomDic);
+        console.trace(err);
+        res.status(500).json({message:err.message});
+    }
+});
+router.post('/secretfolder',authenticateToken, (req, res) => {
 
+    const { secretFolderPath,room,secretFolderParentPath,secret } = req.body;
+    //req.app.locals.sessions.
+    if(!req.app.locals.secretFolders)
+        req.app.locals.secretFolders =[];
+    console.log("Inside secretFolder....................................................");
+    //console.log(req.app.locals.roomDic);
+    const secretIndex = req.app.locals.secretFolders.findIndex(value => value == secretFolderPath);
+    if(!req.app.locals.secretFolders.find(value=> value == secretFolderPath))
+    {
+        req.app.locals.secretFolders.push(secretFolderPath);
+        console.log(req.app.locals.secretFolders);
+        console.log(JSON.stringify(req.app.locals.secretFolders));
+        fs.writeFileSync('./modules/Data/secretFolders.json',JSON.stringify(req.app.locals.secretFolders));
+    }
+    else if( secretIndex >= 0)
+    {
+        req.app.locals.secretFolders.splice(secretIndex,1);
+        fs.writeFileSync('./modules/Data/secretFolders.json',JSON.stringify(req.app.locals.secretFolders));
+    }
+    let folderpath = secretFolderPath.replaceAll('\\',path.sep).replaceAll('/',path.sep);
+    const values = folderpath.split(path.sep);
+    let pPath = path.join( ...values.slice(0,values.length-1));
+    
+    var command = {entryparams:{fieldName:"directories",operation:(secretIndex>= 0)?"add_non_secret_directory":"remove_secret_directory"},command:{path:folderpath,
+        name:path.basename(folderpath),isDirectory:true,parentPath:pPath,isSecret:(secretIndex>= 0)?false:true}};
+    var directories =  mapDirectory("./",folderpath,"",req);
+    command.command = directories;
+    roomUpdates(req,secretFolderPath,command);
+    // If the secret matches, return the room dictionary
+    res.status(200).json({OK:true});
+    console.log("response sent>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+});
 // Add a new directory
 router.post('/', authenticateToken, (req, res) => {
     const {room,name, parentPath } = req.body;
     //console.log(room);
     //console.log(name);console.log(parentPath);
-    var directories =  mapDirectory("./","principal","");
-    console.log(directories);
+    var directories =  mapDirectory("./","principal","",req);
     if (parentPath) 
     {
         const parent =  recursiveFindDir(directories,parentPath);
@@ -230,6 +290,7 @@ router.post('/', authenticateToken, (req, res) => {
         res.status(500).json({message:err});
     }
 });
+
 var RecursiveSplitTest2 = (pathstr,roomDic)=>
 {
     var arr = pathstr.split(path.sep);
@@ -251,12 +312,41 @@ var RecursiveSplitTest2 = (pathstr,roomDic)=>
         RecursiveSplitTest2(currentPath,roomDic);
         --length;
     }
-}
+};
+var RenameRoomsContainingOldPathWithNewPathInArray = (oldPath,newPath,array)=>
+{
+    const returnValue = array.map(value=> value == oldPath? newPath:value);
+    if(!returnValue.find(value=> value == newPath))
+        returnValue.push(newPath);
+    return returnValue;
+};
+var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
+    const keys = Object.keys(roomDic);
+    const arr = keys.filter(value => roomDic[value].find( value2 => value2 == oldPath));
+    arr.forEach(val=>{
+        const contents = roomDic[val];
+        roomDic[val] = contents.map(element=> element == oldPath? newPath :element );
+    });
+    keys.forEach(value => {
+        if( value == oldPath )
+        {
+            roomDic[newPath] = roomDic[value];
+            roomDic[value] = undefined;
+        }
+    });
+    const returnValue = Object.fromEntries(Object.entries(roomDic).filter(([_,value]) => value !== undefined));
+    console.log(returnValue);
+    if(!returnValue[newPath])
+    {
+        RecursiveSplitTest2(newPath,returnValue);
+    }
+    return returnValue;
+};
 
 // Delete a directory
 router.delete('/:room/:path', authenticateToken, (req, res) => {
     const { room,path } = req.params;
-    const directories =  mapDirectory("./","principal","");
+    const directories =  mapDirectory("./","principal","",req);
     const removeDirectory = (dirs) => {
         const founDir = recursiveFindDir(dirs,path);
         if (founDir !== -1) {
@@ -297,4 +387,4 @@ function recursiveFindDir (dir,givenPath){
     return foundIntoAccumulation;
 }
 
-module.exports = {router,recursiveFindDir,writeFile,readFile};
+module.exports = {router,recursiveFindDir,writeFile,readFile,RenameRoomsContainingOldPathWithNewPath };

@@ -1,8 +1,11 @@
 function roomUpdates(req,room,command)
 {
+    console.log(req.app.locals.roomDic);
+    console.log(room);
     const roomsReferenced = req.app.locals.roomDic[room];
-    console.log(command);
-    if(command.isAdditionalCommand){
+    //console.log(command);
+    if(command.isAdditionalCommand)
+    {
         console.log("Looking for a session for additionalCommand***************");
         console.log(command);
     }
@@ -20,7 +23,8 @@ function roomUpdates(req,room,command)
     
     req.app.locals.sessions.forEach(session => 
     {
-        if(command.isAdditionalCommand){
+        if(command.isAdditionalCommand)
+        {
             console.log("session room "+session.room);
             console.log("***************************");
         }
