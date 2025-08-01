@@ -28,6 +28,7 @@ function roomUpdates(req,room,command)
             console.log("session room "+session.room);
             console.log("***************************");
         }
+        try{
         if (roomsReferenced.find(roomInList => roomInList == session.room) || session.room == room )
         {   
             //console.log("Added command ");
@@ -44,6 +45,12 @@ function roomUpdates(req,room,command)
             console.log("Found nada..........");
             console.log("command room "+command.path);
             console.log(roomsReferenced);
+        }
+        }catch(err)
+        {
+            console.trace(err);
+            console.log(room);console.log(roomsReferenced);
+            throw err;
         }
     });
     if ( command.isAdditionalCommand )
