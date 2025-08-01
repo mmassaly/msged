@@ -7,6 +7,8 @@ const authentificationRoutes = require('./modules/authentification');
 const updateRoutes = require('./modules/update');
 const retrievalRoutes = require('./modules/retrievals');
 
+const fs = require('fs');
+
 process.env.LANG = 'fr_FR.UTF-8';
 dotenv.config();
 const app = express(); 
@@ -27,6 +29,8 @@ const roomDicStr = directoryRoutes.readFile("./modules/Data/roomDic.json");
 if(roomDicStr !== undefined)
 {
     app.locals.roomDic = JSON.parse(roomDicStr);
+    directoryRoutes.mapDirectory("./","principal","",{app},true);
+    fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(app.locals.roomDic));    
     console.log(app.locals.roomDic);
 }
 else

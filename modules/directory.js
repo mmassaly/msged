@@ -98,7 +98,7 @@ router.get('/', authenticateToken, (req, res) => {
     console.log(req.user);console.log(req.session);
     const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
     ,req.session.room.replaceAll("\\",path.sep).startsWith("principal")? '':'principal'
-    ,req,true);
+    ,req);
     console.log(directories);
     console.log(req.app.locals.roomDic);
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
@@ -294,7 +294,6 @@ router.post('/', authenticateToken, (req, res) => {
 
 var RecursiveSplitTest2 = (pathstr,roomDic)=>
 {
-    console.log(pathstr +" is going into ");console.log(roomDic);
     var arr = pathstr.split(path.sep);
     let length = arr.length-1;
     if(length == 0)
@@ -388,4 +387,4 @@ function recursiveFindDir (dir,givenPath){
     return foundIntoAccumulation;
 }
 
-module.exports = {router,recursiveFindDir,writeFile,readFile,RenameRoomsContainingOldPathWithNewPath };
+module.exports = {router,recursiveFindDir,mapDirectory,writeFile,readFile,RenameRoomsContainingOldPathWithNewPath };
