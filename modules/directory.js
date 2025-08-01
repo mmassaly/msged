@@ -32,14 +32,15 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       subdirectories: []
     };
   
-    if (mappedDirectory.isDirectory) {
+    if (mappedDirectory.isDirectory)
+    {
       const items = fs.readdirSync(dirrectory);
       mappedDirectory.subdirectories = items.map(item =>
         mapDirectory(pathPrefix,item,path.join(parentPath,folderPath),req,start)
       );
-    }
-    if(start)
+      if(start)
         RecursiveSplitTest2(mappedDirectory.path,req.app.locals.roomDic);
+    }
     return mappedDirectory;
   }
 function readSize(path)
