@@ -41,7 +41,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       if(start)
         RecursiveSplitTest2(mappedDirectory.path,req.app.locals.roomDic);
     }
-    return ((req.session.type == "secret" && mappedDirectory.isSecret) ||!mappedDirectory.isSecret )? mappedDirectory: undefined ;
+    return ((req.session && req.session.type == "secret" && mappedDirectory.isSecret) ||!mappedDirectory.isSecret )? mappedDirectory: undefined ;
   }
 function readSize(path)
 {
