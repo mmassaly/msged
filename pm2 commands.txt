@@ -10,3 +10,5 @@ pm2 start app.js --watch
 
 pm2 unstartup system
 pm2 restart server --watch
+----------------------
+pm2 serve build 3000 --name "my-react-app" --spa
