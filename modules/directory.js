@@ -37,11 +37,11 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       const items = fs.readdirSync(dirrectory);
       mappedDirectory.subdirectories = items.map(item =>
         mapDirectory(pathPrefix,item,path.join(parentPath,folderPath),req,start)
-      );
+      ).filter(item => item !== undefined);
       if(start)
         RecursiveSplitTest2(mappedDirectory.path,req.app.locals.roomDic);
     }
-    return mappedDirectory;
+    return ((req.session.type == "secret" && mappedDirectory.isSecret) ||!mappedDirectory.isSecret )? mappedDirectory: undefined ;
   }
 function readSize(path)
 {
@@ -103,7 +103,7 @@ router.get('/', authenticateToken, (req, res) => {
     console.log(directories);
     console.log(req.app.locals.roomDic);
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-    res.json(directories);
+    res.json(directories? directories: {message:"Pas de dossier trouvé"});
 });
 router.get('/file', authenticateToken, (req, res) => {
    const filePath = path.join('./',req.query.path);
