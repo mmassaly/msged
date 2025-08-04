@@ -1,8 +1,10 @@
 function roomUpdates(req,room,command)
 {
-    console.log(req.app.locals.roomDic);
+    //console.log(req.app.locals.roomDic);
     console.log(room);
     const roomsReferenced = req.app.locals.roomDic[room];
+    console.log("Rooms referenced...");
+    console.log(roomsReferenced);
     //console.log(command);
     if(command.isAdditionalCommand)
     {
