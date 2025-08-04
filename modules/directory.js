@@ -193,8 +193,7 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
         fs.writeFileSync('./modules/Data/secretFolders.json',JSON.stringify(req.app.locals.secretFolders));
     }
     let folderpath = secretFolderPath.replaceAll('\\',path.sep).replaceAll('/',path.sep);
-    const values = folderpath.split(path.sep);
-    let pPath = path.join( ...values.slice(0,values.length-1));
+    let pPath = path.dirname(folderpath);;
     
     var command = {entryparams:{fieldName:"directories",operation:(secretIndex>= 0)?"add_non_secret_directory":"remove_secret_directory"},command:{path:folderpath,
         name:path.basename(folderpath),isDirectory:true,parentPath:pPath,isSecret:(secretIndex>= 0)?false:true}};
