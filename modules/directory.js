@@ -283,7 +283,7 @@ router.post('/', authenticateToken, (req, res) => {
         }
     }
     try{
-        console.log(req.app.locals.roomDic);
+        //console.log(req.app.locals.roomDic);
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
         res.json({ message: 'Directory added successfully!' });
     }

@@ -55,7 +55,7 @@ router.post('/login', async (req, res) => {
   }*/
   // Generate JWT
   const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
-  const newSession = {username:username, password:password, currentToken:token, oldToken: previousToken,type: user.type || user.accountType == "admin"?"secret":"basic", room: user.room,commands:[]};
+  const newSession = {username:username, password:password, currentToken:token, oldToken: previousToken,type: user.type?user.type:user.accountType == "admin"?"secret":"basic", room: user.room,commands:[]};
 
   const timeoutValue = setTimeout(()=>{newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
   /*console.log("************BEFORE************");
@@ -97,7 +97,7 @@ router.post('/login', async (req, res) => {
   /*console.log("************AFTER************");
     console.log(req.app.locals.sessions);
   console.log("**********AFTER**************");*/
-  res.status(200).json({ message: 'Login successful', token,room:user.room,secret:user.accessType == "secret" });
+  res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type});
 });
 
 // Protected route example
