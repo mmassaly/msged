@@ -1,3 +1,5 @@
+const path = require('path');
+
 function roomUpdates(req,room,command)
 {
     //console.log(req.app.locals.roomDic);
