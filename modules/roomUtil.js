@@ -23,10 +23,7 @@ function roomUpdates(req,room,command)
     console.log(roomsReferenced);
     console.log("--------------------------");*/
     
-    console.log("--------------------------");
-    console.log(req.app.locals.sessions);
-    console.log(roomsReferenced.map(roomInList => roomInList.replace("//", path.sep)));
-    console.log("--------------------------");
+  
 
     req.app.locals.sessions.forEach(session => 
     {
@@ -35,25 +32,27 @@ function roomUpdates(req,room,command)
             console.log("session room "+session.room);
             console.log("***************************");
         }
-        try{
-        if (roomsReferenced.find(roomInList => roomInList.replace("//", path.sep) == session.room) || session.room == room )
-        {   
-            //console.log("Added command ");
-            //console.log(command);
-            //console.log("to session ..........");
-            //console.log(session);
-            //console.log("to session ..........");
-            session.commands.push(command);
-            if ( command.isAdditionalCommand )
-                console.log("Found session with room "+session.room);
-        }
-        else if ( command.isAdditionalCommand )
+        try
         {
-            console.log("Found nada..........");
-            console.log("command room "+command.path);
-            console.log(roomsReferenced);
+            if (roomsReferenced.find(roomInList => roomInList == session.room.replace("//", path.sep)) || session.room == room )
+            {   
+                //console.log("Added command ");
+                //console.log(command);
+                //console.log("to session ..........");
+                //console.log(session);
+                //console.log("to session ..........");
+                session.commands.push(command);
+                if ( command.isAdditionalCommand )
+                    console.log("Found session with room "+session.room);
+            }
+            else if ( command.isAdditionalCommand )
+            {
+                console.log("Found nada..........");
+                console.log("command room "+command.path);
+                console.log(roomsReferenced);
+            }
         }
-        }catch(err)
+        catch(err)
         {
             console.trace(err);
             console.log(room);console.log(roomsReferenced);
