@@ -21,10 +21,13 @@ function roomUpdates(req,room,command)
     //console.log("Rooms referenced...");
     /*console.log("Inside room updates");
     console.log(roomsReferenced);
-    console.log("--------------------------");
-    console.log(req.app.locals.sessions);
     console.log("--------------------------");*/
     
+    console.log("--------------------------");
+    console.log(req.app.locals.sessions);
+    console.log(roomsReferenced.map(roomInList => roomInList.replace("//", path.sep)));
+    console.log("--------------------------");
+
     req.app.locals.sessions.forEach(session => 
     {
         if(command.isAdditionalCommand)
