@@ -29,6 +29,7 @@ function roomUpdates(req,room,command)
     {
         console.log("session room "+session.room.replace("//", path.sep));
         console.log("session room "+session.room);
+         console.log("session room "+session.room.replace('\\',path.sep).session.room.replace("//", path.sep));
         if(command.isAdditionalCommand)
         {
             console.log("session room "+session.room);
@@ -36,7 +37,7 @@ function roomUpdates(req,room,command)
         }
         try
         {
-            if (roomsReferenced.find(roomInList => roomInList.replace('\\',path.sep) == session.room.replace("//", path.sep)) || session.room == room )
+            if (roomsReferenced.find(roomInList => roomInList.replace('\\',path.sep) == session.room.replace('\\',path.sep).replace("//", path.sep)) || session.room == room )
             {   
                 //console.log("Added command ");
                 //console.log(command);
