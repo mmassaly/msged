@@ -31,7 +31,7 @@ function roomUpdates(req,room,command)
             console.log("***************************");
         }
         try{
-        if (roomsReferenced.find(roomInList => roomInList == session.room) || session.room == room )
+        if (roomsReferenced.find(roomInList => roomInList.replace("//", path.sep) == session.room) || session.room == room )
         {   
             //console.log("Added command ");
             //console.log(command);

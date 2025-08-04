@@ -183,8 +183,8 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
     if(!req.app.locals.secretFolders.find(value=> value == secretFolderPath))
     {
         req.app.locals.secretFolders.push(secretFolderPath);
-        console.log(req.app.locals.secretFolders);
-        console.log(JSON.stringify(req.app.locals.secretFolders));
+        //console.log(req.app.locals.secretFolders);
+        //console.log(JSON.stringify(req.app.locals.secretFolders));
         fs.writeFileSync('./modules/Data/secretFolders.json',JSON.stringify(req.app.locals.secretFolders));
     }
     else if( secretIndex >= 0)
