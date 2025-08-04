@@ -27,7 +27,8 @@ function roomUpdates(req,room,command)
 
     req.app.locals.sessions.forEach(session => 
     {
-        console.log("session room "+session.room.replace("//", path.sep))
+        console.log("session room "+session.room.replace("//", path.sep));
+        console.log("session room "+session.room);
         if(command.isAdditionalCommand)
         {
             console.log("session room "+session.room);
@@ -35,7 +36,7 @@ function roomUpdates(req,room,command)
         }
         try
         {
-            if (roomsReferenced.find(roomInList => roomInList == session.room.replace("//", path.sep)) || session.room == room )
+            if (roomsReferenced.find(roomInList => roomInList.replace('\\',path.sep) == session.room.replace("//", path.sep)) || session.room == room )
             {   
                 //console.log("Added command ");
                 //console.log(command);
