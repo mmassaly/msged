@@ -202,7 +202,7 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
     if(command.entryparams.operation == "add_non_secret_directory")
     {
         console.log("Adding non secret directory....................");
-        //console.log(command);
+        console.log(`Brute parentPath is ${pPath} calculated parentPath is ${path.dirname(folderpath)} command parentPath ${command.command.parentPath}`);
         console.log("Adding non secret directory....................");
     }
     roomUpdates(req,secretFolderPath,command);
