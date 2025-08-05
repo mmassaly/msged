@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const fs = require('node:fs');
 const router = express.Router();
 router.use(express.json());
-const intervals = [];
 // Signup route
 router.post('/signup', async (req, res) => {
   const { name,username, password,room,identifier,accessType,accessPassword } = req.body;
@@ -54,11 +53,8 @@ router.post('/login', async (req, res) => {
     return;
   }*/
   // Generate JWT
-  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
-  const newSession = {username:username, password:password, currentToken:token, oldToken: previousToken,type: user.type?user.type:user.accountType == "admin"?"secret":"basic", room: user.room,commands:[]};
-
-  const timeoutValue = setTimeout(()=>{newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
-  /*console.log("************BEFORE************");
+  const newSession = {username:username, password:password, oldToken: previousToken,type: user.type?user.type:user.accountType == "admin"?"secret":"basic", room: user.room,commands:[]};
+/*console.log("************BEFORE************");
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
 
@@ -66,29 +62,31 @@ router.post('/login', async (req, res) => {
     find(session => session.currentToken == newSession.currentToken && session.oldToken == newSession.oldToken &&
       session.username == newSession.username &&  session.password == newSession.password && session.room == newSession.room) == undefined )
   { 
+    const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
+    const timeoutValue = setTimeout(()=>{newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
+    newSession.currentToken = token;
     req.app.locals.sessions.push(newSession);
-    intervals.push({interval:timeoutValue,session:newSession});
+    req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
   }
 
   if(previousToken)
   {
     const index = req.app.locals.sessions.findIndex( session => session.currentToken == previousToken );
-    if(index > -1)
+    if( index > -1 )
     {
       const objFound = req.app.locals.sessions[index];
       req.app.locals.sessions.splice(index,1);
       console.log("session deleted");
 
-      var index2  = intervals.findIndex(obj=> obj.session == objFound);
-      if(index2)
+      var index2  = req.app.locals.intervals.findIndex(obj=> obj.session == objFound);
+      if(index2>=0)
       {
-        clearTimeout(intervals[index2]);
-        intervals.splice(index2,1);
+        clearTimeout(req.app.locals.intervals[index2].timeoutValue);
+        req.app.locals.intervals.splice(index2,1);
         console.log("timeout cleared");
       }
     }
     
-   
     console.log('new login token index is '+index);
     console.log(previousToken);
     

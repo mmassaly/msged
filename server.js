@@ -18,6 +18,7 @@ app.locals.sessions = [];
 app.locals.roomDic = process.env.roomDic;
 app.locals.secretKey = process.env.JWT_SECRET;
 app.locals.secretPassword = process.env.SECRET_PASSWORD;
+app.locals.intervals = [];
 
 const usersStr = directoryRoutes.readFile("./modules/Data/users.json");
 if(usersStr !== undefined)
