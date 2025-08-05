@@ -193,12 +193,18 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
         fs.writeFileSync('./modules/Data/secretFolders.json',JSON.stringify(req.app.locals.secretFolders));
     }
     let folderpath = secretFolderPath.replaceAll('\\',path.sep).replaceAll('/',path.sep);
-    let pPath = path.dirname(folderpath);;
+    let pPath = path.dirname(folderpath);
     
     var command = {entryparams:{fieldName:"directories",operation:(secretIndex>= 0)?"add_non_secret_directory":"remove_secret_directory"},command:{path:folderpath,
         name:path.basename(folderpath),isDirectory:true,parentPath:pPath,isSecret:(secretIndex>= 0)?false:true}};
     var directories =  mapDirectory("./",folderpath,"",req);
     command.command = directories;
+    if(command.entryparams.operation == "add_non_secret_directory")
+    {
+        console.log("Adding non secret directory....................");
+        //console.log(command);
+        console.log("Adding non secret directory....................");
+    }
     roomUpdates(req,secretFolderPath,command);
     // If the secret matches, return the room dictionary
     res.status(200).json({OK:true});
