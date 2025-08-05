@@ -39,12 +39,12 @@ function roomUpdates(req,room,command)
         {
             if (roomsReferenced.find(roomInList => roomInList.replace('\\',path.sep) == session.room.replace('\\',path.sep).replace("//", path.sep)) || session.room == room )
             {   
-                console.log("Added command.................");
+                /*console.log("Added command.................");
                 console.log(command);
                 console.log("Added command.................");
                 console.log("to session ..........");
                 console.log(session);
-                console.log("to session ..........");
+                console.log("to session ..........");*/
                 session.commands.push(command);
                 if ( command.isAdditionalCommand )
                     console.log("Found session with room "+session.room);
