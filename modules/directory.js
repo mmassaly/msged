@@ -163,6 +163,10 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         var command ={entryparams:{fieldName:"directories",operation:"rename_directory"},command:{oldPath:oldPath,path:newPath,name:path.basename(newPath),isDirectory:true,parentPath:path.dirname(newPath)}};
         roomUpdates(req,newPath,command);
         fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
+        var commandSub =  command.command;
+        var directories =  mapDirectory("./",newPath,"",req);
+        Object.assign(directories,commandSub);
+        command.command = directories;
         res.json({message:"Dossier renomé avec success!"});
     }catch(err)
     {
