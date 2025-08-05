@@ -89,7 +89,7 @@ router.post('/login', async (req, res) => {
     
     console.log('new login token index is '+index);
     console.log(previousToken);
-    console.log(req.apps.locals.sessions);
+    console.log(req.app.locals.sessions);
   }
   
   /*console.log("************AFTER************");
