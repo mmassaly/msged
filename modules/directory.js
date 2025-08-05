@@ -100,8 +100,8 @@ router.get('/', authenticateToken, (req, res) => {
     const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
     ,''
     ,req);
-    console.log(directories);
-    console.log(req.app.locals.roomDic);
+    //console.log(directories);
+    //console.log(req.app.locals.roomDic);
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     res.json(directories? directories: {message:"Pas de dossier trouvé"});
 });
