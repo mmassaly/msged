@@ -53,18 +53,18 @@ router.post('/login', async (req, res) => {
     return;
   }*/
   // Generate JWT
-  const newSession = {username:username, password:password, oldToken: previousToken,type: user.type?user.type:user.accountType == "admin"?"secret":"basic", room: user.room,commands:[]};
+  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
+  const newSession = {username:username, password:password,currentToken : token, oldToken: previousToken,type: user.type?user.type:user.accountType == "admin"?"secret":"basic", room: user.room,commands:[]};
 /*console.log("************BEFORE************");
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
+  
 
   if( req.app.locals.sessions.
     find(session => session.currentToken == newSession.currentToken && session.oldToken == newSession.oldToken &&
       session.username == newSession.username &&  session.password == newSession.password && session.room == newSession.room) == undefined )
   { 
-    const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
     const timeoutValue = setTimeout(()=>{newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
-    newSession.currentToken = token;
     req.app.locals.sessions.push(newSession);
     req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
   }
