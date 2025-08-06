@@ -96,7 +96,8 @@ const authenticateToken = (req, res, next) => {
 
 // Fetch directories
 router.get('/', authenticateToken, (req, res) => {
-    console.log(req.user);console.log(req.session);
+    //console.log(req.user);
+    console.log(req.session);
     const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
     ,''
     ,req);
@@ -227,8 +228,8 @@ router.post('/', authenticateToken, (req, res) => {
         const parent =  recursiveFindDir(directories,parentPath);
         if (!parent) return res.status(400).json({ error: 'Parent directory not found' });
         const uploadPath = path.join("./",parent.path,name);
-        console.log(parent.path);
-        console.log(uploadPath);
+        //console.log(parent.path);
+        //console.log(uploadPath);
         
         if( !req.app.locals.roomDic[uploadPath] )
         {
