@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
   
   if( req.app.locals.sessions.
     find(session => (JSON.stringify(session.useragent) == JSON.stringify(req.useragent)
-     && (session.currentToken == newSession.currentToken || session.oldToken == newSession.oldToken)
+     && (session.currentToken == newSession.currentToken || session.currentToken == newSession.oldToken)
      && session.username == newSession.username 
      && session.password == newSession.password 
      && session.room == newSession.room
