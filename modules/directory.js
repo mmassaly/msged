@@ -97,7 +97,7 @@ const authenticateToken = (req, res, next) => {
 // Fetch directories
 router.get('/', authenticateToken, (req, res) => {
     //console.log(req.user);
-    console.log(req.session);
+    console.log(req.app.locals.sessions);
     const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
     ,''
     ,req);
