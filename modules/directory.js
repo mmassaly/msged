@@ -204,7 +204,9 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
         name:path.basename(folderpath),isDirectory:true,parentPath:pPath,isSecret:(secretIndex>= 0)?false:true}};
     var commandSub =  command.command;
     var directories =  mapDirectory("./",folderpath,"",req);
-    Object.assign(directories,commandSub);
+    if(directories != undefined)
+        Object.assign(directories,commandSub);
+
     command.command = directories;
     /*if(command.entryparams.operation == "add_non_secret_directory")
     {
