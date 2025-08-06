@@ -2,11 +2,14 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('node:fs');
+const useragent = require('express-useragent');
 const router = express.Router();
+
 router.use(express.json());
+router.use(useragent.express());
 // Signup route
 router.post('/signup', async (req, res) => {
-  const { name,username, password,room,identifier,accessType,accessPassword } = req.body;
+  const { name, username, password,room,identifier,accessType,accessPassword } = req.body;
   console.log(password);
   if(accessType && accessType == "secret" && req.secretPassword != accessPassword)
   {
@@ -54,17 +57,24 @@ router.post('/login', async (req, res) => {
   }*/
   // Generate JWT
   const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
-  const newSession = {username:username, password:password,currentToken : token, oldToken: previousToken,type: user.type?user.type:user.accountType == "admin"?"secret":"basic", room: user.room,commands:[]};
+  const newSession = {date:new Date(Date.now()), username:username, password:password,
+    currentToken : token, oldToken: previousToken,
+    type: user.type?user.type:user.accountType == "admin"?"secret":"basic",
+    room: user.room,hasFinished:false,useragent:req.useragent,commands:[]};
 /*console.log("************BEFORE************");
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
   
-
   if( req.app.locals.sessions.
-    find(session => session.currentToken == newSession.currentToken && session.oldToken == newSession.oldToken &&
-      session.username == newSession.username &&  session.password == newSession.password && session.room == newSession.room) == undefined )
+    find(session => (JSON.stringify(session.useragent) == JSON.stringify(req.useragent)
+     && (session.currentToken == newSession.currentToken || session.oldToken == newSession.oldToken)
+     && session.username == newSession.username 
+     && session.password == newSession.password 
+     && session.room == newSession.room
+     && session.hasFinished) ) == undefined ) 
   { 
-    const timeoutValue = setTimeout(()=>{newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
+    const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
+      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
     req.app.locals.sessions.push(newSession);
     req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
   }
@@ -87,9 +97,10 @@ router.post('/login', async (req, res) => {
       }
     }
     
-    console.log('new login token index is '+index);
-    console.log(previousToken);
-    console.log(req.app.locals.sessions);
+    console.log('previous login token index is '+index);
+    
+    //console.log(previousToken);
+    ///console.log(req.app.locals.sessions);
   }
   
   /*console.log("************AFTER************");
