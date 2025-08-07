@@ -66,18 +66,19 @@ router.get('/', authenticateToken, (req, res) => {
     const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
     //console.log("Inside router get update.");
     //console.log(req.app.locals.sessions);
-    if(!yourSession){
-        res.json({message:"You must login."});
+    if(!yourSession)
+    {
+        res.status(401).json({message:"You must login."});
         return;
     }
-    var interval = setInterval(()=>{
+    const interval = setInterval(()=>{
         if(yourSession.commands.length > 0)
         {
             console.log(req.app.locals.sessions);
             res.json({message:"Il y a des mises à jours.",commands:yourSession.commands});
             clearInterval(interval);
         }
-    },750);
+    },200);
 });
 
 module.exports = router;
