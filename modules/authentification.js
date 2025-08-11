@@ -56,9 +56,9 @@ router.put('/signup', (req, res) => {
 router.post('/signup', async (req, res) => {
   const { imgSource ,name, username, password,room
     ,identifier,accessType,accessPassword
-    ,isAdmin,secretAdminAccountPassword } = req.body;
+    ,admin,secretAdminAccountPassword } = req.body;
   //console.log(password);
-  if(isAdmin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword)
+  if(admin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword)
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer ce type de compte." });
   }
@@ -80,7 +80,7 @@ router.post('/signup', async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Store user
-  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:admin?'principal':room,identifier,accountType:admin?"admin":"user",accessPassword,type:admin?"secret":accessType });
+  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:room,identifier,accountType:admin?"admin":"user",accessPassword,type:admin?"secret":accessType });
   const users = JSON.stringify(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json",users);
   res.status(200).json({ message: 'User registered successfully' });
