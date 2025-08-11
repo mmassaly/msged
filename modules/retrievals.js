@@ -4,7 +4,7 @@ const fs = require('node:fs');
 
 const router = express.Router();
 router.use(express.json());
-
+const jwt = require('jsonwebtoken');
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
