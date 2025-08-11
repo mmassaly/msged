@@ -13,6 +13,7 @@ process.env.LANG = 'fr_FR.UTF-8';
 dotenv.config();
 const app = express(); 
 const PORT = process.env.PORT || 3039;
+
 app.locals.users = []; // Temporary in-memory user storage
 app.locals.sessions = [];
 app.locals.roomDic = process.env.roomDic;

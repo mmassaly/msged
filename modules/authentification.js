@@ -57,6 +57,9 @@ router.post('/signup', async (req, res) => {
   const { imgSource ,name, username, password,room
     ,identifier,accessType,accessPassword
     ,admin,secretAdminAccountPassword } = req.body;
+    console.log(req.app.locals);
+    console.log(req.app.locals.secretAdminAccountKey);
+    console.log(secretAdminAccountPassword);
   //console.log(password);
   if(admin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword)
   {
