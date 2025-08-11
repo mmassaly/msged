@@ -207,11 +207,11 @@ router.get('/list',authenticateToken, (req, res) => {
     {
       return res.status(404).json({ message: 'User not found' });
     }
-    if(user.accessType == "admin" && req.app.locals.users)
+    if(user.accountType == "admin" && req.app.locals.users)
       res.status(200).json({ users: req.app.locals.users});
-    else if(user.accessType != "admin" && req.app.locals.users)
+    else if(user.accountType != "admin" && req.app.locals.users)
     {
-      res.status(200).json({ users: req.app.locals.users.filter(user => user.username !== decoded_username), user });
+      res.status(200).json({ users: req.app.locals.users.filter(user => user.username !== username), user });
     } 
     else
     {
