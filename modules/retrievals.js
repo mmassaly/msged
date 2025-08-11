@@ -36,7 +36,7 @@ router.get('/departements',authenticateToken,async (req, res) => {
             res.status(404).json({message:"No departements found."});
             return;
         }
-        res.status(200).json(JSON.parse(req.app.locals.departements));
+        res.status(200).json(req.app.locals.departements);
         return;
     }
     catch(err)
