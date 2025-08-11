@@ -218,7 +218,7 @@ router.get('/list',authenticateToken, (req, res) => {
       res.status(500).json({ message: 'User data not available' });
     }
   } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: err.message });
   }
 });
 
