@@ -199,8 +199,8 @@ const authenticateToken = (req, res, next) => {
 };
 
 router.get('/list',authenticateToken, (req, res) => {
-  const username = req.headers.authorization?.split(' ')[0];
-  const {room} = req.body;
+  const username = req.headers['authorization']?.split(' ')[0];
+  
   try {
     const user = req.app.locals.users.find(user => user.username === username);
     if (!user) 
