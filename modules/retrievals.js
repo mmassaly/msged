@@ -4,29 +4,46 @@ const fs = require('node:fs');
 
 const router = express.Router();
 router.use(express.json());
-router.get('/departements',async (req, res) => {
-    const parsedUrl = url.parse(req.url, true);
-    var token = parsedUrl.query.token;
-    if(token)// 1-token and is 2-matching
+
+
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    //console.log(req.headers);
+    const token = authHeader && authHeader.split(' ')[1];
+    const userName = authHeader && authHeader.split(' ')[0];
+    if (token == undefined) return res.sendStatus(401);
+    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
+    if(!yourSession)
     {
-        try
+        res.status(403).json({ message: 'Invalid username' });
+        return;
+    }  
+    jwt.verify(token, req.app.locals.secretKey, (err, user) => {
+        if (err){ 
+            return res.status(403).json({ message: 'Token not matched' });
+        }//json({ message: 'Token not matched' });;
+        req.user = user;
+        next();
+    });
+};
+
+router.get('/departements',authenticateToken,async (req, res) => {
+    const parsedUrl = url.parse(req.url, true);
+    try
+    {
+        if(req.app.locals.departements === undefined)
         {
-            var documentPrefix = parsedUrl.pathname.replace("/",'');
-            //console.log(documentPrefix);
-            const data = fs.readFileSync(`Data/${documentPrefix}.json`);
-            console.log(JSON.parse(data));
-            res.status(200).json(JSON.parse(data));
+            res.status(404).json({message:"No departements found."});
             return;
         }
-        catch(err)
-        {
-            res.status(500).json({message:"erreure de configuration côté serveur",err});
-        }
+        res.status(200).json(JSON.parse(req.app.locals.departements));
+        return;
     }
-    else
+    catch(err)
     {
-        res.status(500).json({message:"No valid token given."});
+        res.status(500).json({message:"erreure de configuration côté serveur",err});
     }
+    
 });
 
 module.exports = router;

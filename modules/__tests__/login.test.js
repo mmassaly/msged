@@ -95,4 +95,45 @@ describe('POST /login', () => {
    
     
   });
+  beforeAll(() => {
+    app = express();
+    app.use(express.json());
+    app.locals.users = [
+      { username: 'testuser', password: 'hashedpass', accountType: 'admin', room: 'A1' },
+      { username: 'testuser2', password: 'hashedpass2', accountType: 'admin', room: 'A1' }
+    ];
+    app.locals.sessions = [{ username: 'testuser', password: 'hashedpass', accountType: 'admin', room: 'A1' }];
+      /*app.locals.sessions = [
+        {
+          username: 'testuser',
+          password: 'pass123',
+          currentToken: 'mockedToken',
+          previousToken: null,
+          type: 'secret',
+          room: 'A1',
+          commands: []
+        }
+    ];*/
+    app.locals.intervals = [];
+    app.locals.secretKey = 'testsecret';
+    app.use(authRoutes);
+  });
+  it('testing put method in authentification.js', async () => {
+    const res = await request(app).put('/signup').send({
+      oldUser: { username: 'testuser', password: 'hashedpass', accountType: 'admin', room: 'A1' },
+      newUser: { username: 'newtestuser', password: 'newhashedpass', accountType: 'admin', room: 'A1' },
+    });
+    console.log(app.locals.users[0]);
+      expect(app.locals.users[0]).toEqual({
+        username: 'newtestuser',
+        password: 'hashedpass',
+        accountType: 'admin',
+        room: 'A1',
+        email: undefined,
+        role: undefined,
+        imgSource: undefined
+      });
+      expect(app.locals.users.length).toBe(1);
+      
+  });
 });

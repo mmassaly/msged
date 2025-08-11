@@ -1,6 +1,6 @@
 const path = require('path');
 
-function roomUpdates(req,room,command)
+function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=undefined)
 {
     //console.log(req.app.locals.roomDic);
     console.log(room);
@@ -45,6 +45,14 @@ function roomUpdates(req,room,command)
                 console.log("to session ..........");
                 console.log(session);
                 console.log("to session ..........");*/
+                if(checkSession && checkSessionUserName)
+                {
+                    if(session.username != checkSessionUserName)
+                    {
+                        console.log("Skipping session for "+session.username);
+                        return;
+                    }
+                }
                 session.commands.push(command);
                 if ( command.isAdditionalCommand )
                     console.log("Found session with room "+session.room);

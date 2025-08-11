@@ -1,3 +1,5 @@
+
+const roomUpdates = require('./roomUtil');
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -8,9 +10,52 @@ const router = express.Router();
 router.use(express.json());
 router.use(useragent.express());
 // Signup route
+router.put('/signup', (req, res) => {
+  const { oldUser,newUser,room } = req.body;
+   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
+   command:{newUser,oldUser}};
+  if(!oldUser || !newUser) {
+    return res.status(400).json({ message: 'Invalid request' });
+  }
+  if(!req.app.locals.users || !Array.isArray(req.app.locals.users)) {
+    return res.status(500).json({ message: 'User data not available' });
+  }
+  if(!req.app.locals.users.find(user => user.username === oldUser.username)) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  req.app.locals.users = req.app.locals.users.map(user => {
+    if (user.username === oldUser.username) {
+      return {
+        ...user,
+        username: newUser.username || user.username,
+        email: newUser.email || user.email,
+        role: newUser.role || user.role,
+        imgSource: newUser.imgSource || user.imgSource,
+        password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : user.password
+      };
+    }
+    return user;
+  });
+  req.app.locals.sessions = req.app.locals.sessions.map(session => {
+    if (session.username === oldUser.username) {  }
+      return {
+        ...session,
+        username: newUser.username || session.username,
+        password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : session.password,
+        room: newUser.room || session.room,
+        type: newUser.type || session.type,
+        currentToken: newUser.token||session.currentToken, // or Keep the same token
+
+      };
+    });
+  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
+  var command = {};
+  roomUpdates(req,room,command);
+  res.status(200).json({ message: 'User updated successfully' });
+});
 router.post('/signup', async (req, res) => {
-  const { name, username, password,room,identifier,accessType,accessPassword } = req.body;
-  console.log(password);
+  const { imgSource ,name, username, password,room,identifier,accessType,accessPassword } = req.body;
+  //console.log(password);
   if(accessType && accessType == "secret" && req.secretPassword != accessPassword)
   {
     return res.status(400).json({ message: 'Le mot de passe pour le type top secret ne correspond pas' });
@@ -29,7 +74,7 @@ router.post('/signup', async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Store user
-  req.app.locals.users.push({ name,username, password: hashedPassword,room:room,identifier,type:accessType,accessPassword });
+  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:room,identifier,accountType:accessType,accessPassword });
   const users = JSON.stringify(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json",users);
   res.status(200).json({ message: 'User registered successfully' });
@@ -120,6 +165,52 @@ router.get('/protected', (req, res) => {
   try {
     const decoded = jwt.verify(token, req.app.locals.secretKey);
     res.status(200).json({ message: 'Access granted', user: decoded });
+  } catch (err) {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    //console.log(req.headers);
+    const token = authHeader && authHeader.split(' ')[1];
+    const userName = authHeader && authHeader.split(' ')[0];
+    if (token == undefined) return res.sendStatus(401);
+    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
+    if(!yourSession)
+    {
+        res.status(403).json({ message: 'Invalid username' });
+        return;
+    }  
+    jwt.verify(token, req.app.locals.secretKey, (err, user) => {
+        if (err){ 
+            return res.status(403).json({ message: 'Token not matched' });
+        }//json({ message: 'Token not matched' });;
+        req.user = user;
+        next();
+    });
+};
+
+router.get('/list',authenticateToken, (req, res) => {
+  const username = req.headers.authorization?.split(' ')[0];
+  const {room} = req.body;
+  try {
+    const user = req.app.locals.users.find(user => user.username === username);
+    if (!user) 
+    {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if(user.isAdmin && req.app.locals.users)
+      res.status(200).json({ users: req.app.locals.users});
+    else if(!user.isAdmin && req.app.locals.users)
+    {
+      res.status(200).json({ users: req.app.locals.users.filter(user => user.username !== decoded_username), user });
+    } 
+    else
+    {
+      res.status(500).json({ message: 'User data not available' });
+    }
+
   } catch (err) {
     res.status(401).json({ message: 'Invalid token' });
   }
