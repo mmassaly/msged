@@ -54,15 +54,21 @@ router.put('/signup', (req, res) => {
   res.status(200).json({ message: 'User updated successfully' });
 });
 router.post('/signup', async (req, res) => {
-  const { imgSource ,name, username, password,room,identifier,accessType,accessPassword } = req.body;
+  const { imgSource ,name, username, password,room
+    ,identifier,accessType,accessPassword
+    ,isAdmin,secretAdminAccountPassword } = req.body;
   //console.log(password);
-  if(accessType && accessType == "secret" && req.secretPassword != accessPassword)
+  if(isAdmin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword)
   {
-    return res.status(400).json({ message: 'Le mot de passe pour le type top secret ne correspond pas' });
+    return res.status(400).json({ message: "Vous n'êtes pas permis de créer ce type de compte." });
   }
-  else if (!accessType || accessType == "basic")
+  else if(accessType && accessType == "secret" && req.secretPassword != accessPassword)
   {
-    return res.status(400).json({ message: 'Chemin invalide.' });
+    return res.status(400).json({ message: "Vous n'êtes pas permis de créer ce type de compte." });
+  }
+  else if (!accessType || accessType == "basic" && req.secretPassword != accessPassword)
+  {
+    return res.status(400).json({ message: "Vous n'êtes pas permis de créer ce type de compte." });
   }
   // Check if user already exists
   const existingUser = req.app.locals.users.find(user => user.username === username);
@@ -74,7 +80,7 @@ router.post('/signup', async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Store user
-  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:room,identifier,accountType:accessType,accessPassword });
+  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:admin?'principal':room,identifier,accountType:admin?"admin":"user",accessPassword,type:admin?"secret":accessType });
   const users = JSON.stringify(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json",users);
   res.status(200).json({ message: 'User registered successfully' });

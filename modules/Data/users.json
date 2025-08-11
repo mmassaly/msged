@@ -1,14 +1,3 @@
 [
-  {
-    "username": "newtestuser",
-    "password": "hashedpass",
-    "accountType": "admin",
-    "room": "A1"
-  },
-  {
-    "username": "testuser2",
-    "password": "hashedpass2",
-    "accountType": "admin",
-    "room": "A1"
-  }
+  
 ]
