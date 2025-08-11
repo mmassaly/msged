@@ -57,9 +57,7 @@ router.post('/signup', async (req, res) => {
   const { imgSource ,name, username, password,room
     ,identifier,accessType,accessPassword
     ,admin,secretAdminAccountPassword } = req.body;
-    console.log(req.app.locals);
-    console.log(req.app.locals.secretAdminAccountKey);
-    console.log(secretAdminAccountPassword);
+  
   //console.log(password);
   if(admin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword)
   {
@@ -69,7 +67,7 @@ router.post('/signup', async (req, res) => {
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer ce un compte secret." });
   }
-  else if (!accessType || accessType == "basic" && req.secretPassword != accessPassword)
+  else if ((!accessType || accessType == "basic") && req.secretPassword != accessPassword)
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer un compte basique." });
   }
