@@ -6,11 +6,34 @@ const jwt = require('jsonwebtoken');
 const fs = require('node:fs');
 const useragent = require('express-useragent');
 const router = express.Router();
-
+const path = require('path');
+const multer = require('multer');
 router.use(express.json());
 router.use(useragent.express());
 // Signup route
-router.put('/signup', (req, res) => {
+const storage = multer.diskStorage({
+    limits: {
+    fileSize: Infinity // This disables file size limit
+    },
+    destination: (req, file, cb) => {
+      if(!fs.existsSync('./Data/')) 
+      {
+        fs.mkdirSync('./Data/');
+      }
+      cb(null, './Data/');
+    },
+    filename: (req, file, cb) => {
+      // Use the original file name or generate a unique name
+      // Here we are using the original name, but you can modify it as needed
+      cb(null, file.originalname);
+      req.imgpath = path.join("./","Data",file.originalname); // Store the image source in the request body
+    }});
+const upload = multer({ storage ,limits: {
+    files: Infinity,
+    parts: Infinity
+  }});
+
+router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) => {
   const { oldUser,newUser,room } = req.body;
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
@@ -30,7 +53,7 @@ router.put('/signup', (req, res) => {
         username: newUser.username || user.username,
         email: newUser.email || user.email,
         role: newUser.role || user.role,
-        imgSource: newUser.imgSource || user.imgSource,
+        imgSource: req.imgpath,
         password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : user.password
       };
     }
