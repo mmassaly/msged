@@ -112,7 +112,7 @@ router.post('/login', async (req, res) => {
   const newSession = {date:new Date(Date.now()), username:username, password:password,
     currentToken : token, oldToken: previousToken,
     type: user.type?user.type:user.accountType == "admin"?"secret":"basic",
-    room: user.room,hasFinished:false,useragent:req.useragent,commands:[]};
+    accountType:user.accountType,room: user.room,hasFinished:false,useragent:req.useragent,commands:[]};
 /*console.log("************BEFORE************");
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
