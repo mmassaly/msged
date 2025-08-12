@@ -58,8 +58,8 @@ router.post('/signup', async (req, res) => {
     ,identifier,accessType,accessPassword
     ,admin,secretAdminAccountPassword } = req.body;
   
-  console.log(req.body);
-  console.log(req.app.locals);
+  //console.log(req.body);
+  //console.log(req.app.locals);
 
   if(admin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword)
   {
