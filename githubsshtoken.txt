@@ -1,3 +1,27 @@
 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
 
 git pull https://<username>:<token>@github.com/<username>/<repo>.git
+
+--------------------------------------------------------------------------------------------------------
+
+If you want to merge another repo into your current one (e.g., a global template or shared base):
+git remote add global https://github.com/otheruser/global-repo.git
+git fetch global
+git merge global/main --allow-unrelated-histories
+
+
+- --allow-unrelated-histories is needed if the repos don’t share a common history.
+- Resolve any merge conflicts manually, then commit.
+
+🧹 Optional: Clean Up Remotes
+git remote -v       # View remotes
+git remote remove global  # Remove if no longer needed
+
+
+
+🛡️ Tips
+- Always commit or stash your local changes before pulling or merging.
+- Use branches to isolate merges if you're unsure (git checkout -b merge-global).
+- Use git status and git log to inspect changes before and after merging.
+
+Want help resolving merge conflicts or syncing with a team repo? I can walk you through that too.
