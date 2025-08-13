@@ -50,9 +50,9 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) =>
     if (user.username === oldUser.username) {
       return {
         ...user,
-        username: newUser.username || user.username,
-        email: newUser.email || user.email,
-        role: newUser.role || user.role,
+        username: newUser.username? newUser.username: user.username,
+        email: newUser.email? newUser.email: user.email,
+        role: newUser.role? newUser.role: user.role,
         imgSource: req.imgpath,
         password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : user.password
       };
@@ -63,12 +63,11 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) =>
     if (session.username === oldUser.username) {  }
       return {
         ...session,
-        username: newUser.username || session.username,
+        username: newUser.username? newUser.username : session.username,
         password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : session.password,
-        room: newUser.room || session.room,
-        type: newUser.type || session.type,
-        currentToken: newUser.token||session.currentToken, // or Keep the same token
-
+        room: newUser.room? newUser.room : session.room,
+        type: newUser.type? newUser.type: session.type,
+        currentToken: newUser.token?newUser.token:session.currentToken, // or Keep the same token
       };
     });
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
@@ -106,7 +105,7 @@ router.post('/signup', async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Store user
-  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:room,identifier,accountType:admin?"admin":"user",accessPassword,type:admin?"secret":accessType });
+  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:room,identifier,accountType:admin?"admin":"user",type:admin?"secret":accessType });
   const users = JSON.stringify(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json",users);
   res.status(200).json({ message: 'User registered successfully' });
@@ -236,7 +235,9 @@ router.get('/list',authenticateToken, (req, res) => {
       res.status(200).json({ users: req.app.locals.users});
     else if(user.accountType != "admin" && req.app.locals.users)
     {
-      res.status(200).json({ users: req.app.locals.users.filter(user => user.username !== username), user });
+      res.status(200).json({ users: req.app.locals.users.filter(user2 =>
+         user2.room && user2.room.startsWith(user.room))
+         .map(user2 => Object.fromEntries(Object.entries(user2).filter(([key])=> key != password))) });
     } 
     else
     {
