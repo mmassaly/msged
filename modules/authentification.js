@@ -55,7 +55,8 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-router.put('/signup',authenticateToken ,upload.single("imgSource"),express.json(),(req, res) => {
+router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) => {
+  console.log(req.body);
   const { oldUser,newUser,room } = req.body;
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
