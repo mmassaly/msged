@@ -8,7 +8,7 @@ const useragent = require('express-useragent');
 const router = express.Router();
 const path = require('path');
 const multer = require('multer');
-router.use(express.json());
+//router.use(express.json());
 router.use(useragent.express());
 // Signup route
 const storage = multer.diskStorage({
@@ -97,7 +97,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) =>
   roomUpdates(req,room,command);
   res.status(200).json({ message: 'User updated successfully' });
 });
-router.post('/signup', async (req, res) => {
+router.post('/signup',express.json(), async (req, res) => {
   const { imgSource ,name, username, password,room
     ,identifier,accessType,accessPassword
     ,admin,secretAdminAccountPassword } = req.body;
@@ -134,7 +134,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // Login route
-router.post('/login', async (req, res) => {
+router.post('/login',express.json(), async (req, res) => {
   const { username, password,previousToken} = req.body;
   // Find user
   const user = req.app.locals.users.find(user => user.username === username);
