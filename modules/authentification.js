@@ -56,10 +56,10 @@ const authenticateToken = (req, res, next) => {
 };
 
 router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) => {
-  const { oldUser,newUser,room } = req.body;
+  var { oldUser,newUser,room } = req.body;
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
-   console.log(oldUser);console.log(newUser);console.log(req.app.locals.users);
+  oldUser = JSON.parse(oldUser); newUser = JSON.parse(newUser);
   if(!oldUser || !newUser) {
     return res.status(400).json({ message: 'Invalid request' });
   }
