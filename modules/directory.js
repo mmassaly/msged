@@ -97,7 +97,7 @@ const authenticateToken = (req, res, next) => {
 // Fetch directories
 router.get('/', authenticateToken, (req, res) => {
     //console.log(req.user);
-    console.log(req.app.locals.sessions);
+    //console.log(req.app.locals.sessions);
     const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
     ,''
     ,req);
@@ -171,7 +171,7 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         res.json({message:"Dossier renomé avec success!"});
     }catch(err)
     {
-        console.log(req.app.locals.roomDic);
+        //console.log(req.app.locals.roomDic);
         console.trace(err);
         res.status(500).json({message:err.message});
     }

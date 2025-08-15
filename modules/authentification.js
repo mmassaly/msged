@@ -26,9 +26,9 @@ const storage = multer.diskStorage({
       // Use the original file name or generate a unique name
       // Here we are using the original name, but you can modify it as needed
       console.log(file);     
-      req.imgpath = path.join("./","Data",file.originalName); // Store the image source in the request body
-      console.log(file.originalName);
-      cb(null,decodeURI(file.originalName));
+      req.imgpath = path.join("./","Data",file.originalname); // Store the image source in the request body
+      console.log(file.originalname);
+      cb(null,decodeURI(file.originalname));
     }});
 
 const upload = multer({ storage ,limits: {
