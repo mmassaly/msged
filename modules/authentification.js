@@ -16,18 +16,20 @@ const storage = multer.diskStorage({
     fileSize: Infinity // This disables file size limit
     },
     destination: (req, file, cb) => {
-      if(!fs.existsSync('./Data/')) 
+      if(!fs.existsSync('./Data')) 
       {
-        fs.mkdirSync('./Data/');
+        fs.mkdirSync('./Data');
       }
-      cb(null, './Data/');
+      cb(null, './Data');
     },
     filename: (req, file, cb) => {
       // Use the original file name or generate a unique name
       // Here we are using the original name, but you can modify it as needed
-      cb(null, file.originalname);
-      req.imgpath = path.join("./","Data",file.originalname); // Store the image source in the request body
-}});
+      console.log(file);     
+      req.imgpath = path.join("./","Data",file.originalName); // Store the image source in the request body
+      console.log(file.originalName);
+      cb(null,decodeURI(file.originalName));
+    }});
 
 const upload = multer({ storage ,limits: {
     files: Infinity,
@@ -40,12 +42,22 @@ const authenticateToken = (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
     if (token == undefined) return res.sendStatus(401);
-    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
+    var yourSession = req.app.locals.sessions.filter(session => session.username == userName);
+   
     if(!yourSession)
     {
         res.status(403).json({ message: 'Invalid username' });
         return;
-    }  
+    }
+    yourSession = yourSession.find( session => session.currentToken == token);
+    console.log(req.app.locals.sessions);
+    console.log(token);
+   /* if( !yourSession)
+    {    
+       res.status(403).json({ message: 'Invalid token' });
+        return;
+    }*/
+
     jwt.verify(token, req.app.locals.secretKey, (err, user) => {
         if (err){ 
             return res.status(403).json({ message: 'Token not matched' });
@@ -60,6 +72,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) =>
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
   oldUser = JSON.parse(oldUser); newUser = JSON.parse(newUser);
+  room = newUser.room;
   if(!oldUser || !newUser) {
     return res.status(400).json({ message: 'Invalid request' });
   }
