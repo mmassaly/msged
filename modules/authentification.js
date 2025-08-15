@@ -16,11 +16,12 @@ const storage = multer.diskStorage({
     fileSize: Infinity // This disables file size limit
     },
     destination: (req, file, cb) => {
-      if(!fs.existsSync('./Data')) 
+      const uploadPath = path.join("./", 'Data');
+      if(!fs.existsSync(uploadPath)) 
       {
-        fs.mkdirSync('./Data');
+        fs.mkdirSync(uploadPath, { recursive: true });
       }
-      cb(null, './Data');
+      cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
       // Use the original file name or generate a unique name
