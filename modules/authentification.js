@@ -43,12 +43,13 @@ const authenticateToken = (req, res, next) => {
     const userName = authHeader && authHeader.split(' ')[0];
     if (token == undefined) return res.sendStatus(401);
     var yourSession = req.app.locals.sessions.filter(session => session.username == userName);
-   
+    
     if(!yourSession)
     {
         res.status(403).json({ message: 'Invalid username' });
         return;
     }
+
     yourSession = yourSession.find( session => session.currentToken == token);
     console.log(req.app.locals.sessions);
     console.log(token);
