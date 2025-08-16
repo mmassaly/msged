@@ -74,6 +74,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) =>
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
   oldUser = JSON.parse(oldUser); newUser = JSON.parse(newUser);
+  newUser.imgSource = req.imgpath;
   room = newUser.room;
   if(!oldUser || !newUser) {
     return res.status(400).json({ message: 'Invalid request' });
