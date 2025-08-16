@@ -54,11 +54,11 @@ const authenticateToken = (req, res, next) => {
     yourSession = yourSession.find( session => session.currentToken == token);
     console.log(req.app.locals.sessions);
     console.log(token);
-   /* if( !yourSession)
+    if( !yourSession)
     {    
        res.status(403).json({ message: 'Invalid token' });
         return;
-    }*/
+    }
 
     jwt.verify(token, req.app.locals.secretKey, (err, user) => {
         if (err){ 
