@@ -10,9 +10,6 @@ const useragent = require('express-useragent');
 const router = express.Router();
 const path = require('path');
 const multer = require('multer');
-const bodyPix = require('@tensorflow-models/body-pix');
-const tf = require('@tensorflow/tfjs-node');
-const { createCanvas, ImageData } = require('canvas');
 
 
 router.use(express.json());
@@ -81,45 +78,6 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
    command:{newUser,oldUser}};
    console.log(oldUser);console.log(newUser);console.log(req.app.locals.users);
    
-
-   try
-   {
-      const imageBuffer = fs.readFileSync(req.imgpath);
-      const imageTensor = tf.node.decodeImage(imageBuffer);
-
-
-      const canvas = createCanvas(imageTensor.shape[1], imageTensor.shape[0]);
-      const ctx = canvas.getContext('2d');
-
-      await bodyPix.load();
-      const segmentation = await net.segmentPerson(imageTensor, {
-              internalResolution: 'medium',
-              segmentationThreshold: 0.7,
-            });
-      const maskImage = bodyPix.toMask(segmentation);
-
-          // Convert mask to ImageData
-      const imageData = new ImageData(
-            Uint8ClampedArray.from(maskImage.data),
-            maskImage.width,
-            maskImage.height
-      );
-          
-      const outputPath = path.join("./","Data", `${file.filename}_edit.png`);
-
-          // Draw mask onto canvas
-      ctx.putImageData(imageData, 0, 0);
-
-          // Extract alpha channel to apply transparency
-      const maskedBuffer = canvas.toBuffer('image/png');
-      fs.writeFileSync(outputPath, maskedBuffer);
-      req.imgpathEdit = outputPath;
-
-   }
-   catch (error) 
-   {
-      console.error('Error processing image:', error);
-   }
   if(!oldUser || !newUser) {
     return res.status(400).json({ message: 'Invalid request' });
   }
