@@ -80,6 +80,8 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
    console.log(oldUser);console.log(newUser);console.log(req.app.locals.users);
+   console.log(req.imgFileInPath);
+   
    try
    {
       const imageBuffer = req.imgFileInPath.buffer;
