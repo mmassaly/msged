@@ -74,10 +74,10 @@ const authenticateToken = (req, res, next) => {
 //npm install @tensorflow-models/body-pix @tensorflow/tfjs
 router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, res) => {
   const { oldUser,newUser,room } = req.body;
-   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
-   command:{newUser,oldUser}};
-   console.log(oldUser.username);console.log(newUser);console.log(req.app.locals.users);
-   console.log(req.app.locals.users);
+  var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
+  command:{newUser,oldUser}};
+  console.log(oldUser.username); console.log(newUser); console.log(req.app.locals.users);
+
   if(!oldUser || !newUser) {
     return res.status(400).json({ message: 'Invalid request' });
   }
