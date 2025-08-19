@@ -21,20 +21,21 @@ const storage = multer.diskStorage({
     fileSize: Infinity // This disables file size limit
     },
     destination: (req, file, cb) => {
-      if(!fs.existsSync('./Data/')) 
+      const uploadPath = path.join("./", 'Data');
+      if(!fs.existsSync(uploadPath)) 
       {
-        fs.mkdirSync('./Data/');
+        fs.mkdirSync(uploadPath, { recursive: true });
       }
-      cb(null, './Data/');
+      cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
       // Use the original file name or generate a unique name
       // Here we are using the original name, but you can modify it as needed
-      
-      cb(null, file.originalname);
-      req.imgpath = path.join("./","Data",file.originalname);
-       // Store the image source in the request body
-}});
+      console.log(file);     
+      req.imgpath = path.join("./","Data",file.originalname); // Store the image source in the request body
+      console.log(file.originalname);
+      cb(null,decodeURI(file.originalname));
+    }});
 
 const upload = multer({ storage ,limits: {
     files: Infinity,
@@ -47,12 +48,23 @@ const authenticateToken = (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
     if (token == undefined) return res.sendStatus(401);
-    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
+    var yourSession = req.app.locals.sessions.filter(session => session.username == userName);
+    
     if(!yourSession)
     {
         res.status(403).json({ message: 'Invalid username' });
         return;
-    }  
+    }
+
+    yourSession = yourSession.find( session => session.currentToken == token);
+    console.log(req.app.locals.sessions);
+    console.log(token);
+    if( !yourSession)
+    {    
+       res.status(403).json({ message: 'Invalid token' });
+        return;
+    }
+
     jwt.verify(token, req.app.locals.secretKey, (err, user) => {
         if (err){ 
             return res.status(403).json({ message: 'Token not matched' });
@@ -139,7 +151,9 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
       };
     });
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
-  var command = {};
+  var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
+   command:{oldUser, newUser}};
+         
   roomUpdates(req,room,command);
   res.status(200).json({ message: 'User updated successfully' });
 });
@@ -250,7 +264,7 @@ router.post('/login', async (req, res) => {
   /*console.log("************AFTER************");
     console.log(req.app.locals.sessions);
   console.log("**********AFTER**************");*/
-  res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType});
+  res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType,imgSource:user.imgSource,name:user.name,identifier: user.identifier});
 });
 
 // Protected route example
