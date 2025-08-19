@@ -33,8 +33,6 @@ const storage = multer.diskStorage({
       // Here we are using the original name, but you can modify it as needed
       console.log(file);     
       req.imgpath = path.join("./","Data",file.originalname); // Store the image source in the request body
-      req.imgFileInPath = file;
-      console.log(file.originalname);
       cb(null,decodeURI(file.originalname));
     }});
 
@@ -80,11 +78,11 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
    console.log(oldUser);console.log(newUser);console.log(req.app.locals.users);
-   console.log(req.imgFileInPath);
    
+
    try
    {
-      const imageBuffer = req.imgFileInPath.buffer;
+      const imageBuffer = fs.readFileSync(req.imgpath);
       const imageTensor = tf.node.decodeImage(imageBuffer);
 
 
