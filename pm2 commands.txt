@@ -16,3 +16,11 @@ pm2 serve build 3000 --name "my-react-app" --spa
 ------------------------------
 logs : pm2 logs
 flush logs: pm2 flush
+
+
+------------------------------------------------
+
+NEEDS mvn installed 
+
+This ensures PM2 runs your app with Node 18, regardless of the global version.
+pm2 start server.js --interpreter=/home/ubuntu/.nvm/versions/node/v18.x.x/bin/node --name server

@@ -1,3 +1,5 @@
+//nvm install 18
+//nvm use 18
 
 const roomUpdates = require('./roomUtil');
 const express = require('express');
@@ -9,7 +11,7 @@ const router = express.Router();
 const path = require('path');
 const multer = require('multer');
 const bodyPix = require('@tensorflow-models/body-pix');
-const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs-node');
 const { createCanvas, ImageData } = require('canvas');
 
 
