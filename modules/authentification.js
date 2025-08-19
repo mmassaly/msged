@@ -96,7 +96,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
         username: newUser.username? newUser.username: user.username,
         email: newUser.email? newUser.email: user.email,
         role: newUser.role? newUser.role: user.role,
-        imgSource: req.imgpathEdit?req.imgpathEdit:req.imgpath,
+        imgSource: req.imgpath,
         password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : user.password
       };
     }
@@ -115,7 +115,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
     });
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
-   command:{oldUser, newUser}};
+   command:{oldUser, newUsser}};
          
   roomUpdates(req,room,command);
   res.status(200).json({ message: 'User updated successfully' });
