@@ -16,3 +16,8 @@ git push -u origin mmain
 when you got problems 
 git fetch origin
 git reset --hard origin/<branch-name>
+
+
+-------------------------------------------------------------
+git config --global user.name "Your New Name"
+git config --global user.email "yournewemail@example.com"

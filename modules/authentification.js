@@ -8,6 +8,11 @@ const useragent = require('express-useragent');
 const router = express.Router();
 const path = require('path');
 const multer = require('multer');
+const bodyPix = require('@tensorflow-models/body-pix');
+const tf = require('@tensorflow/tfjs');
+const { createCanvas, ImageData } = require('canvas');
+
+
 router.use(express.json());
 router.use(useragent.express());
 // Signup route
@@ -25,8 +30,10 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
       // Use the original file name or generate a unique name
       // Here we are using the original name, but you can modify it as needed
+      
       cb(null, file.originalname);
-      req.imgpath = path.join("./","Data",file.originalname); // Store the image source in the request body
+      req.imgpath = path.join("./","Data",file.originalname);
+       // Store the image source in the request body
 }});
 
 const upload = multer({ storage ,limits: {
@@ -54,12 +61,50 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
-
-router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) => {
+//npm install @tensorflow-models/body-pix @tensorflow/tfjs
+router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, res) => {
   const { oldUser,newUser,room } = req.body;
    var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{newUser,oldUser}};
    console.log(oldUser);console.log(newUser);console.log(req.app.locals.users);
+   try
+   {
+      const imageBuffer = fs.readFileSync(file.path);
+      const imageTensor = tf.node.decodeImage(imageBuffer);
+
+
+      const canvas = createCanvas(imageTensor.shape[1], imageTensor.shape[0]);
+      const ctx = canvas.getContext('2d');
+
+      await bodyPix.load();
+      const segmentation = await net.segmentPerson(imageTensor, {
+              internalResolution: 'medium',
+              segmentationThreshold: 0.7,
+            });
+      const maskImage = bodyPix.toMask(segmentation);
+
+          // Convert mask to ImageData
+      const imageData = new ImageData(
+            Uint8ClampedArray.from(maskImage.data),
+            maskImage.width,
+            maskImage.height
+      );
+          
+      const outputPath = path.join("./","Data", `${file.filename}_edit.png`);
+
+          // Draw mask onto canvas
+      ctx.putImageData(imageData, 0, 0);
+
+          // Extract alpha channel to apply transparency
+      const maskedBuffer = canvas.toBuffer('image/png');
+      fs.writeFileSync(outputPath, maskedBuffer);
+      req.imgpathEdit = outputPath;
+
+   }
+   catch (error) 
+   {
+      console.error('Error processing image:', error);
+   }
   if(!oldUser || !newUser) {
     return res.status(400).json({ message: 'Invalid request' });
   }
@@ -76,7 +121,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),(req, res) =>
         username: newUser.username? newUser.username: user.username,
         email: newUser.email? newUser.email: user.email,
         role: newUser.role? newUser.role: user.role,
-        imgSource: req.imgpath,
+        imgSource: req.imgpathEdit?req.imgpathEdit:req.imgpath,
         password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : user.password
       };
     }
