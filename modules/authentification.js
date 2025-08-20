@@ -115,7 +115,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
     });
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
-   command:{oldUser, newUsser}};
+   command:{oldUser, newUser}};
          
   roomUpdates(req,room,command);
   res.status(200).json({ message: 'User updated successfully' });
