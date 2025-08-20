@@ -79,6 +79,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
   command:{newUser,oldUser}};
   console.log(oldUser.username); console.log(newUser); console.log(req.app.locals.users);
+  newUser.imgSource = req.imgpath;
 
   if(!oldUser || !newUser) {
     return res.status(400).json({ message: 'Invalid request' });
