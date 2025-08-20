@@ -228,7 +228,7 @@ router.post('/login', async (req, res) => {
   /*console.log("************AFTER************");
     console.log(req.app.locals.sessions);
   console.log("**********AFTER**************");*/
-  res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType,imgSource:user.imgSource,name:user.name,identifier: user.identifier});
+  res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType,imgSource:user.imgSource,name:user.name,identifier: user.identifier,email:user.email});
 });
 
 // Protected route example
