@@ -98,7 +98,8 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
         email: newUser.email? newUser.email: user.email,
         role: newUser.role? newUser.role: user.role,
         imgSource: req.imgpath,
-        password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : user.password
+        password: newUser.password && newUser.password.trim().length > 0  ? 
+	bcrypt.hashSync(newUser.password, 10) : user.password
       };
     }
     return user;
@@ -108,7 +109,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
       return {
         ...session,
         username: newUser.username? newUser.username : session.username,
-        password: newUser.password ? bcrypt.hashSync(newUser.password, 10) : session.password,
+        password: newUser.password && newUser.password.trim().length > 0 ? bcrypt.hashSync(newUser.password, 10) : session.password,
         room: newUser.room? newUser.room : session.room,
         type: newUser.type? newUser.type: session.type,
         currentToken: newUser.token?newUser.token:session.currentToken, // or Keep the same token
