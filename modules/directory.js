@@ -19,6 +19,9 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
         fs.mkdirSync(dirrectory);
     }
     const stats = fs.statSync(dirrectory);
+    if(folderPath.endsWith("Appel d'offre Janvier-Juin 2024")){console.log("Folder path is Appel d'offre Janvier-Juin 2024 "+path.join(parentPath,folderPath));
+      console.log(req.app.locals.secretFolders);
+    }
     const mappedDirectory = {
       name: path.basename(folderPath),
       isSecret: req?req.app.locals.secretFolders.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
@@ -159,7 +162,10 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         fs.renameSync(oldPath,newPath);
         req.app.locals.roomDic = RenameRoomsContainingOldPathWithNewPath(oldPath,newPath,req.app.locals.roomDic);
         req.app.locals.secretFolders = RenameRoomsContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
-        writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));   
+        
+	console.log(req.app.locals.secretFolders);
+	
+	writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));   
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
         var command ={entryparams:{fieldName:"directories",operation:"rename_directory"},command:{oldPath:oldPath,path:newPath,name:path.basename(newPath),isDirectory:true,parentPath:path.dirname(newPath)}};
         roomUpdates(req,newPath,command);
@@ -189,8 +195,8 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
     if(!req.app.locals.secretFolders.find(value=> value == secretFolderPath))
     {
         req.app.locals.secretFolders.push(secretFolderPath);
-        console.log(req.app.locals.secretFolders);
-        console.log(JSON.stringify(req.app.locals.secretFolders));
+        //console.log(req.app.locals.secretFolders);
+        //console.log(JSON.stringify(req.app.locals.secretFolders));
         fs.writeFileSync('./modules/Data/secretFolders.json',JSON.stringify(req.app.locals.secretFolders));
     }
     else if( secretIndex >= 0)
@@ -217,6 +223,9 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
         console.log(`Brute parentPath is ${pPath} calculated parentPath is ${path.dirname(folderpath)} command parentPath ${command.command.parentPath}`);
         console.log("Adding non secret directory....................");
     }*/
+    console.log(req.app.locals.roomDic);
+    console.log(secretFolderPath);
+    console.log(req.app.locals.roomDic[secretFolderPath]);
     roomUpdates(req,secretFolderPath,command);
     // If the secret matches, return the room dictionary
     res.status(200).json({OK:true});
@@ -334,20 +343,24 @@ var RecursiveSplitTest2 = (pathstr,roomDic)=>
 };
 var RenameRoomsContainingOldPathWithNewPathInArray = (oldPath,newPath,array)=>
 {
-    const returnValue = array.map(value=> value == oldPath? newPath:value);
+    console.log("-----------------11111--------------------");
+    console.log(array);
+    const returnValue = array.map(value=> value.replace(oldPath,newPath));
     if(!returnValue.find(value=> value == newPath))
         returnValue.push(newPath);
+    console.log("------------------------------------------");
+    console.log(returnValue);
     return returnValue;
 };
 var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
     const keys = Object.keys(roomDic);
-    const arr = keys.filter(value => roomDic[value].find( value2 => value2 == oldPath));
+    const arr = keys.filter(value => roomDic[value].find( value2 => value2.startsWith(oldPath)));
     arr.forEach(val=>{
         const contents = roomDic[val];
-        roomDic[val] = contents.map(element=> element == oldPath? newPath :element );
+        roomDic[val] = contents.map(element=> element.replace(oldPath,newPath) );
     });
     keys.forEach(value => {
-        if( value == oldPath )
+        if( value.startsWith(oldPath) )
         {
             roomDic[newPath] = roomDic[value];
             roomDic[value] = undefined;
