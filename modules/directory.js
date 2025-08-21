@@ -348,8 +348,9 @@ var RenameRoomsContainingOldPathWithNewPathInArray = (oldPath,newPath,array)=>
     const returnValue = array.map(value=> value.replace(oldPath,newPath));
     if(!returnValue.find(value=> value == newPath))
         returnValue.push(newPath);
-    console.log("------------------------------------------");
+  
     console.log(returnValue);
+    console.log("------------------11111----------------------");
     return returnValue;
 };
 var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
@@ -362,7 +363,8 @@ var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
     keys.forEach(value => {
         if( value.startsWith(oldPath) )
         {
-            roomDic[newPath] = roomDic[value];
+            var anewPath = value.replace(oldPath,newPath);
+            roomDic[anewPath] = roomDic[value];
             roomDic[value] = undefined;
         }
     });
