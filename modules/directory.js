@@ -184,6 +184,8 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         console.log("--------------------------3-----------------------");
         console.log(req.app.locals.users);
         console.log("---------------------------4----------------------");
+        console.log(req.app.locals.sessions);
+        console.log("---------------------------5----------------------");
 
         writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
