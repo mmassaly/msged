@@ -176,9 +176,16 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
             }
             return user;
         });
-	console.log(req.app.locals.secretFolders);
-	
-	    writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));   
+	    
+        console.log("-------------------------1------------------------");
+        console.log(req.app.locals.secretFolders);
+        console.log("--------------------------2-----------------------");
+        console.log(req.app.locals.roomDic);
+        console.log("--------------------------3-----------------------");
+        console.log(req.app.locals.users);
+        console.log("---------------------------4----------------------");
+
+        writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
         writeFile("./modules/Data/users.json",JSON.stringify(req.app.locals.users));
         
