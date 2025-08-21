@@ -169,10 +169,19 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
             }
             return session;
         });
+        req.app.locals.sessions = req.app.locals.users.map(user => {
+            if(user.room.startsWith(oldPath))
+            {
+                user.room = user.room.replace(oldPath,newPath);
+            }
+            return user;
+        });
 	console.log(req.app.locals.secretFolders);
 	
-	writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));   
+	    writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));   
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
+        writeFile("./modules/Data/users.json",JSON.stringify(req.app.locals.users));
+        
         var command ={entryparams:{fieldName:"directories",operation:"rename_directory"},command:{oldPath:oldPath,path:newPath,name:path.basename(newPath),isDirectory:true,parentPath:path.dirname(newPath)}};
         roomUpdates(req,newPath,command);
         fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
