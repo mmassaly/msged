@@ -169,7 +169,7 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
             }
             return session;
         });
-        req.app.locals.sessions = req.app.locals.users.map(user => {
+        req.app.locals.users = req.app.locals.users.map(user => {
             if(user.room.startsWith(oldPath))
             {
                 user.room = user.room.replace(oldPath,newPath);
@@ -177,7 +177,7 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
             return user;
         });
 	    
-        console.log("-------------------------1------------------------");
+        /*console.log("-------------------------1------------------------");
         console.log(req.app.locals.secretFolders);
         console.log("--------------------------2-----------------------");
         console.log(req.app.locals.roomDic);
@@ -185,7 +185,7 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         console.log(req.app.locals.users);
         console.log("---------------------------4----------------------");
         console.log(req.app.locals.sessions);
-        console.log("---------------------------5----------------------");
+        console.log("---------------------------5----------------------");*/
 
         writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));

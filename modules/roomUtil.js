@@ -53,6 +53,7 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
                         return;
                     }
                 }
+                
                 session.commands.push(command);
                 if ( command.isAdditionalCommand )
                     console.log("Found session with room "+session.room);
