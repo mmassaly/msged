@@ -158,6 +158,31 @@ router.post('/signup', async (req, res) => {
   res.status(200).json({ message: 'User registered successfully' });
 });
 
+router.get('/logout', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+    //console.log(req.headers);
+  const token = authHeader && authHeader.split(' ')[1];
+  const username = authHeader && authHeader.split(' ')[0];
+  
+  const userFound = req.app.locals.sessions.find(user=> user.username == username && user.currentToken == token && JSON.stringify(user.useragent) == JSON.stringify(req.useragent));
+  if(userFound)
+  {
+    userFound.hasFinished = true;
+    var index2  = req.app.locals.intervals.findIndex(obj=> obj.session == userFound);
+    if(index2>=0)
+    {
+      clearTimeout(req.app.locals.intervals[index2].timeoutValue);
+      req.app.locals.intervals.splice(index2,1);
+    }	
+    res.status(200).json({message:"Vous êtes déconnectés avec succès."});
+    const value = req.app.locals.sessions.findIndex(user => user == userFound);
+    req.app.locals.splice(value,1); 	
+  }
+  else
+  {
+    	res.status(404).json({message:"Utilisateur non retrouvé"});
+  }
+});
 // Login route
 router.post('/login', async (req, res) => {
   const { username, password,previousToken} = req.body;

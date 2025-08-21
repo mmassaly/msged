@@ -185,11 +185,12 @@ router.post('/secretfolder',authenticateToken, (req, res) => {
     console.log("Inside secretFolder....................................................");
     //console.log(req.app.locals.roomDic);
     const secretIndex = req.app.locals.secretFolders.findIndex(value => value == secretFolderPath);
+    //console.log(    {secretFolderPath,room,secretFolderParentPath,secret} );
     if(!req.app.locals.secretFolders.find(value=> value == secretFolderPath))
     {
         req.app.locals.secretFolders.push(secretFolderPath);
-        //console.log(req.app.locals.secretFolders);
-        //console.log(JSON.stringify(req.app.locals.secretFolders));
+        console.log(req.app.locals.secretFolders);
+        console.log(JSON.stringify(req.app.locals.secretFolders));
         fs.writeFileSync('./modules/Data/secretFolders.json',JSON.stringify(req.app.locals.secretFolders));
     }
     else if( secretIndex >= 0)

@@ -62,6 +62,13 @@ app.use(cors({
 }));
 
 directoryRoutes.mapDirectory("./","principal","",{app},true);
+
+const files = fs.readdirSync('./');
+
+files.forEach(file => {
+  console.log(file);
+});
+
 fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(app.locals.roomDic));    
     
 // File upload routes
