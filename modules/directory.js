@@ -162,7 +162,13 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         fs.renameSync(oldPath,newPath);
         req.app.locals.roomDic = RenameRoomsContainingOldPathWithNewPath(oldPath,newPath,req.app.locals.roomDic);
         req.app.locals.secretFolders = RenameRoomsContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
-        
+        req.app.locals.sessions = req.app.locals.sessions.map(session => {
+            if(session.room.startsWith(oldPath))
+            {
+                session.room = session.room.replace(oldPath,newPath);
+            }
+            return session;
+        });
 	console.log(req.app.locals.secretFolders);
 	
 	writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));   
