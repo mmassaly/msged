@@ -160,8 +160,10 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
     }
     try{
         fs.renameSync(oldPath,newPath);
-        req.app.locals.roomDic = RenameRoomsContainingOldPathWithNewPath(oldPath,newPath,req.app.locals.roomDic);
-        req.app.locals.secretFolders = RenameRoomsContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
+        req.app.locals.roomDic = 
+        RenameRoomsContainingOldPathWithNewPath(oldPath,newPath,req.app.locals.roomDic);
+        req.app.locals.secretFolders = 
+        RenameSecretsArrayContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
         req.app.locals.sessions = req.app.locals.sessions.map(session => {
             if(session.room.startsWith(oldPath))
             {
@@ -375,6 +377,12 @@ var RenameRoomsContainingOldPathWithNewPathInArray = (oldPath,newPath,array)=>
   
     console.log(returnValue);
     console.log("------------------11111----------------------");
+    return returnValue;
+};
+
+var RenameSecretsArrayContainingOldPathWithNewPathInArray = (oldPath,newPath,array)=>
+{
+    const returnValue = array.map(value=> value.replace(oldPath,newPath));
     return returnValue;
 };
 var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
