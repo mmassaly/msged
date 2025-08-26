@@ -74,11 +74,11 @@ const authenticateToken = (req, res, next) => {
 //npm install @tensorflow-models/body-pix @tensorflow/tfjs
 router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, res) => {
   var { oldUser,newUser,room } = req.body;
-  oldUser= JSON.parse(oldUser);
+  oldUser = JSON.parse(oldUser);
   newUser = JSON.parse(newUser);
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
   command:{newUser,oldUser}};
-  console.log(oldUser.username); console.log(newUser);
+  //console.log(oldUser.username); console.log(newUser);
   newUser.imgSource = req.imgpath;
 
   if(!oldUser || !newUser) {
@@ -106,7 +106,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
     return user;
   });
   req.app.locals.sessions = req.app.locals.sessions.map(session => {
-    if (session.username === oldUser.username) {  }
+    if (session.username === oldUser.username) {  
       return {
         ...session,
         username: newUser.username? newUser.username : session.username,
@@ -114,11 +114,12 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
         room: newUser.room? newUser.room : session.room,
         type: newUser.type? newUser.type: session.type,
         currentToken: newUser.token?newUser.token:session.currentToken, // or Keep the same token
-      };
+      };}
+	return session;
     });
-  console.log("Writting to file C:\Users\idris\Documents\GitHub\msged\react\src");
+  console.log("Writting to file ");
    console.log(req.app.locals.users);
-  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
+  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{oldUser, newUser}};
          
