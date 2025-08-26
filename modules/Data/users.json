@@ -29,6 +29,35 @@
     "identifier": "Mme",
     "accountType": "user",
     "accessPassword": "goidjdslf5+5y-ç_k5+",
-    "type": "secret"
+    "type": "secret",
+    "role": "user"
+  },
+  {
+    "name": "Juste Eya Pacome",
+    "username": "JusteEyaPac",
+    "password": "$2b$10$ApPASZ9PpkltPZW8Vec1BOCMCsD4fMw1TYHDU58MACbYgJkhHEqFC",
+    "room": "principal\\Administration",
+    "identifier": "MR",
+    "accountType": "user",
+    "type": "secret",
+    "role": "user"
+  },
+  {
+    "name": "Ndeye Marième Ndiaye",
+    "username": "Marième Ndiaye",
+    "password": "$2b$10$xBS1dz3kPba8dHGJ9Gpr7.lxzJhX7M/wLqOlCYNKmT67.n1b61aTa",
+    "room": "principal\\Administration",
+    "identifier": "Mme",
+    "accountType": "user",
+    "type": "basic"
+  },
+  {
+    "name": "Awa Tall",
+    "username": "AwaTall",
+    "password": "$2b$10$tkQJxzb4LewaGJ3SePnKV.zoMNmWPGvOsbHPn2ePKOiRh2NhH681C",
+    "room": "principal\\Resources Humaines (RH)",
+    "identifier": "Mlle",
+    "accountType": "user",
+    "type": "basic"
   }
 ]

@@ -55,8 +55,8 @@ const authenticateToken = (req, res, next) => {
     }
 
     yourSession = yourSession.find( session => session.currentToken == token);
-    console.log(req.app.locals.sessions);
-    console.log(token);
+    //console.log(req.app.locals.sessions);
+    //console.log(token);
     if( !yourSession)
     {    
        res.status(403).json({ message: 'Invalid token' });
@@ -78,7 +78,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   newUser = JSON.parse(newUser);
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
   command:{newUser,oldUser}};
-  console.log(oldUser.username); console.log(newUser); console.log(req.app.locals.users);
+  console.log(oldUser.username); console.log(newUser);
   newUser.imgSource = req.imgpath;
 
   if(!oldUser || !newUser) {
@@ -97,6 +97,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
         username: newUser.username? newUser.username: user.username,
         email: newUser.email? newUser.email: user.email,
         role: newUser.role? newUser.role: user.role,
+	room: newUser.room? newUser.room : session.room,
         imgSource: req.imgpath,
         password: newUser.password && newUser.password.trim().length > 0  ? 
 	bcrypt.hashSync(newUser.password, 10) : user.password
@@ -115,6 +116,8 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
         currentToken: newUser.token?newUser.token:session.currentToken, // or Keep the same token
       };
     });
+  console.log("Writting to file C:\Users\idris\Documents\GitHub\msged\react\src");
+   console.log(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
    command:{oldUser, newUser}};
