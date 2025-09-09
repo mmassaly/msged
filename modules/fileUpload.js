@@ -365,6 +365,31 @@ router.post('/', authenticateToken, upload.array('files'), (req, res) => {
     req.on('data',(chunk)=> console.log(chunk));
     res.json({ message: 'Les fichiers sont chargés avec succès!' });
 });
+
+router.delete('/', (req, res) => {
+    const {filePath,parentPath} = req.body; // Get the folder to save into
+    // Save metadata in the database (if necessary)
+    
+    //console.log(`Files uploaded to folder: ${folder}`);
+    if(filePath && fs.existsSync(path.join("./",filePath)))
+    {
+        try{
+        fs.unlinkSync(filePath);
+        }catch(err)
+        {
+            res.status(500).json({message: `${filePath} n'a pu être enlevé!`});
+            return;
+        }
+        res.json({ message: `${filePath} a été enlevé!`});
+        return;
+    }
+    else if(filePath)
+    {
+        res.status(404).json({ message: `${filePath} est introuvable!`});
+        return;
+    }
+    res.status(404).json({ message: 'Vous devez envoyer un chemin valide!' });
+});
 router.post('/json', authenticateToken, (req, res) => {
     //const folder = req.body.folder; // Get the folder to save into
     // Save metadata in the database (if necessary)
