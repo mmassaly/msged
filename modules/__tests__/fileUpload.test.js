@@ -27,9 +27,14 @@ describe("DELETE/api/upload",()=>
             ,currentToken: 'accountToken',accountType: 'admin', room: 'A1' },
         ];
         app.locals.intervals = [];
+        app.locals.roomDic = {Data:["Data"],"Data/testsFiles":["Data","Data/testsFiles"]};
         app.use(authRoutes);
+        if(fs.existsSync("Data/testsFiles/A.txt"))
+        {
+            fs.unlink("Data/testsFiles/A.txt");
+        }
     });
-
+    //
     beforeEach(()=>{
         bcrypt.compare.mockResolvedValue(true);
         jwt.sign.mockReturnValue('mockedToken');

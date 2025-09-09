@@ -371,10 +371,13 @@ router.delete('/', (req, res) => {
     // Save metadata in the database (if necessary)
     
     //console.log(`Files uploaded to folder: ${folder}`);
-    if(filePath && fs.existsSync(path.join("./",filePath)))
+    if(filePath  && parentPath && fs.existsSync(path.join("./",filePath)))
     {
         try{
         fs.unlinkSync(filePath);
+        var command = {entryparams:{fieldName:"directories",operation:"remove_file"}
+        ,command:{path:filePath,name:path.basename(filePath),parentPath:parentPath}};
+        roomUpdates(req,parentPath,command);
         }catch(err)
         {
             res.status(500).json({message: `${filePath} n'a pu être enlevé!`});
@@ -383,7 +386,7 @@ router.delete('/', (req, res) => {
         res.json({ message: `${filePath} a été enlevé!`});
         return;
     }
-    else if(filePath)
+    else if(filePath && parentPath)
     {
         res.status(404).json({ message: `${filePath} est introuvable!`});
         return;
