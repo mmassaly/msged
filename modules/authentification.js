@@ -133,7 +133,11 @@ router.post('/signup', async (req, res) => {
   
   //console.log(req.body);
   //console.log(req.app.locals);
-
+  
+  console.log(secretAdminAccountPassword);
+  console.log(req.app.locals);
+  console.log(admin);
+  
   if(admin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword)
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer un compte d'administrateur." });
