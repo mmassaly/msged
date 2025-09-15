@@ -126,6 +126,29 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   roomUpdates(req,room,command);
   res.status(200).json({ message: 'User updated successfully' });
 });
+
+router.delete('/signup',authenticateToken ,async (req, res) => {
+  var { username, room } = req.body;
+  
+  if(!req.app.locals.users || !Array.isArray(req.app.locals.users)) {
+    return res.status(500).json({ message: 'User data not available' });
+  }
+  if(!req.app.locals.users.find(user => user.username === oldUser.username)) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  const userFound = req.app.locals.users.findIndex(user => 
+    user.username == username);
+  if(userFound)
+  {
+    return res.status(404).json({ message: "L'utilisateur n'existe pas." });
+  }
+  var command ={entryparams:{fieldName:"user_info",operation:"delete_user_info"},
+   command:{oldUser, newUser}};
+         
+  roomUpdates(req,room,command);
+  res.status(200).json({ message: 'User updated successfully' });
+});
+
 router.post('/signup', async (req, res) => {
   const { imgSource ,name, username, password,room
     ,identifier,accessType,accessPassword
@@ -160,11 +183,17 @@ router.post('/signup', async (req, res) => {
 
   // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
-
+  const newUser = { imgSource,name,username, password: hashedPassword,room:room
+    ,identifier,accountType:admin?"admin":"user",type:admin?"secret":accessType };
   // Store user
-  req.app.locals.users.push({ imgSource,name,username, password: hashedPassword,room:room,identifier,accountType:admin?"admin":"user",type:admin?"secret":accessType });
+  req.app.locals.users.push(newUser);
   const users = JSON.stringify(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json",users);
+  var command ={entryparams:{fieldName:"user_info",operation:"add_user_info"},
+   command:{newUser}};
+         
+  roomUpdates(req,room,command);
+  
   res.status(200).json({ message: 'User registered successfully' });
 });
 
