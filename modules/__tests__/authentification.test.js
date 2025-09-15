@@ -21,6 +21,32 @@ jest.mock('jsonwebtoken');
   }));
 
 });*/
+describe('DELETE /authentification',()=>{
+    let app;
+    beforeEach(()=>{
+       
+        app = express();
+        app.use(express.json());
+        app.locals.users = [
+        { username: 'testuser', password: 'hashedpass', accountType: 'admin', room: 'A1' },
+        { username: 'testuser2', password: 'hashedpass2', accountType: 'admin', room: 'A1' }
+        ];
+        app.locals.sessions = [{ username: 'testuser', password: 'hashedpass',currentToken: 'accountToken',accountType: 'admin', room: 'A1' },
+        ];
+        app.locals.intervals = [];
+        app.locals.roomDic = {'A1':['A1']};
+        app.use(authRoutes);
+    });
+    test('should return 200 and token for valid deletion',async ()=>{
+        jwt.verify.mockReturnValue(app.locals.users[0]);
+        const b = {username:"testuser",room:"A1"};
+        const res = await request(app).delete('/signup')
+        .set('Authorization', 'testuser accountToken')
+        .set('Content-Type', 'application/json')
+        .send(b);
+        expect(res.statusCode).toBe(200);
+    });
+});
 
 describe('PUT /authentification', () => {
     let app;
@@ -74,4 +100,5 @@ describe('PUT /authentification', () => {
         expect(res.statusCode).toBe(200);
         //expect(res.body.token).toBe('mockedToken');
     });
+
 });
