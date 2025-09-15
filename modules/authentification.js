@@ -133,20 +133,17 @@ router.delete('/signup',authenticateToken ,async (req, res) => {
   if(!req.app.locals.users || !Array.isArray(req.app.locals.users)) {
     return res.status(500).json({ message: 'User data not available' });
   }
-  if(!req.app.locals.users.find(user => user.username === oldUser.username)) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-  const userFound = req.app.locals.users.findIndex(user => 
+  const userFound = req.app.locals.users.find(user => 
     user.username == username);
-  if(userFound)
+  if(!userFound)
   {
-    return res.status(404).json({ message: "L'utilisateur n'existe pas." });
+    return res.status(404).json({ message: "L'utilisateur n'éxiste pas." });
   }
-  var command ={entryparams:{fieldName:"user_info",operation:"delete_user_info"},
-   command:{oldUser, newUser}};
+
+  var command ={entryparams:{fieldName:"user_info",operation:"delete_user_info"}};
          
   roomUpdates(req,room,command);
-  res.status(200).json({ message: 'User updated successfully' });
+  res.status(200).json({ message: "L'utilisateur a été enlevé sans problèmes." });
 });
 
 router.post('/signup', async (req, res) => {
