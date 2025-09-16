@@ -140,7 +140,8 @@ router.delete('/signup',authenticateToken ,async (req, res) => {
     return res.status(404).json({ message: "L'utilisateur n'éxiste pas." });
   }
 
-  var command ={entryparams:{fieldName:"user_info",operation:"delete_user_info"}};      
+  var command ={entryparams:{fieldName:"user_info",operation:"delete_user_info"},
+  command:{username,room }};      
   roomUpdates(req,room,command);
   
   res.status(200).json({ message: "L'utilisateur a été enlevé sans problèmes." });
