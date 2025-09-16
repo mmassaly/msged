@@ -141,10 +141,19 @@ router.delete('/signup',authenticateToken ,async (req, res) => {
   }
 
   var command ={entryparams:{fieldName:"user_info",operation:"delete_user_info"},
-  command:{username,room }};      
+  command:{username,room }};
+
+  const  foundValueIndex = req.app.locals.users.findIndex(value => value.username == username
+    && value.room == room);
+    if(foundValueIndex >= 0)
+  {
+    req.app.locals.users.splice(foundValueIndex,1);
+    const users = JSON.stringify(req.app.locals.users);
+    fs.writeFileSync("./modules/Data/users.json",users);
+  }     
   roomUpdates(req,room,command);
-  
   res.status(200).json({ message: "L'utilisateur a été enlevé sans problèmes." });
+
 });
 
 router.post('/signup', async (req, res) => {
