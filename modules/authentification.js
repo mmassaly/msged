@@ -174,11 +174,13 @@ router.post('/signup', async (req, res) => {
     console.log(admin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword);
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer un compte d'administrateur." });
   }
-  else if(accessType && accessType == "secret" && req.app.locals.secretPassword != accessPassword)
+  else if(!(admin && req.app.locals.secretAdminAccountKey == secretAdminAccountPassword)
+    && (accessType && accessType == "secret" && req.app.locals.secretPassword != accessPassword))
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer ce un compte secret." });
   }
-  else if ((!accessType || accessType == "basic") && req.app.locals.secretPassword != accessPassword)
+  else if (!(admin && req.app.locals.secretAdminAccountKey == secretAdminAccountPassword)
+    && (!accessType || accessType == "basic") && req.app.locals.secretPassword != accessPassword)
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer un compte basique." });
   }
