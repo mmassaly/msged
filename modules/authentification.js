@@ -199,7 +199,7 @@ router.post('/signup', async (req, res) => {
   const users = JSON.stringify(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json",users);
   var command ={entryparams:{fieldName:"user_info",operation:"add_user_info"},
-   command:{newUser}};
+   command:newUser};
          
   roomUpdates(req,room,command);
   
