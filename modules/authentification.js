@@ -331,12 +331,12 @@ router.get('/list',authenticateToken, (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     if(user.accountType == "admin" && req.app.locals.users)
-      res.status(200).json({ users: req.app.locals.users.map(user2 => Object.fromEntries(Object.entries(user2).filter(([key])=> key != 'password'))) });
+      res.status(200).json({ users: req.app.locals.users.map(user2 => Object.fromEntries(Object.entries(user2).filter(([key])=> (key != 'password' && key != 'accessPassword')))) });
     else if(user.accountType != "admin" && req.app.locals.users)
     {
       res.status(200).json({ users: req.app.locals.users.filter(user2 =>
          user2.room && user2.room.startsWith(user.room))
-         .map(user2 => Object.fromEntries(Object.entries(user2).filter(([key])=> key != 'password'))) });
+         .map(user2 => Object.fromEntries(Object.entries(user2).filter(([key])=> (key != 'password' && key != 'accessPassword')))) });
     } 
     else
     {
