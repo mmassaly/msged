@@ -97,8 +97,10 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
         username: newUser.username? newUser.username: user.username,
         email: newUser.email? newUser.email: user.email,
         role: newUser.role? newUser.role: user.role,
-	room: newUser.room? newUser.room : session.room,
+	      room: newUser.room? newUser.room : session.room,
+        type: newUser.type? newUser.type: session.type,
         imgSource: req.imgpath,
+        accountType: newUser.accountType? newUser.accountType: user.accountType,
         password: newUser.password && newUser.password.trim().length > 0  ? 
 	bcrypt.hashSync(newUser.password, 10) : user.password
       };
