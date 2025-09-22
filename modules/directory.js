@@ -121,10 +121,11 @@ router.get('/file', authenticateToken, (req, res) => {
    /*
    res.write(readFile(filePath));
    res.end();*/
-   const readStream = readFile2(filePath)
+   const readStream = readFile2(filePath);
    if(readStream)
     readStream.pipe(res);
    else{
+        console.log(`File ${filePath} not found.`);
         res.write(undefined);
         res.end();
     }
