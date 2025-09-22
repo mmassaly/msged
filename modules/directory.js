@@ -110,7 +110,7 @@ router.get('/', authenticateToken, (req, res) => {
     res.json(directories? directories: {message:"Pas de dossier trouvé"});
 });
 router.get('/file', authenticateToken, (req, res) => {
-   const filePath = path.join('./',req.query.path);
+   const filePath = path.join('./',decodeURIComponent(req.query.path));
    const mimeType = mime.lookup(filePath);
    console.log(mimeType);
    //mime.getType(filePath) causes issues
