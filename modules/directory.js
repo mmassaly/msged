@@ -28,7 +28,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       date: stats.mtime, // Last modified date
       year:stats.isDirectory()?undefined:stats.mtime.getFullYear(),
       isDirectory: stats.isDirectory(),
-      type:stats.isDirectory()?undefined:path.basename(folderPath).split(".")[1],
+      type:stats.isDirectory()?undefined:path.basename(folderPath).split(".")[path.basename(folderPath).split(".").length-1],
       path: path.join(parentPath,folderPath),
       parentPath: parentPath,
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
