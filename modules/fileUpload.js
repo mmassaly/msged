@@ -45,7 +45,7 @@ const storage = multer.diskStorage({
         if(req.checkArchiveFolder)
         {
             console.log("Vous ne pouvez pas ajouter des fichiers dans un dossier archivé.");
-            return;
+            return cb(new Error("Upload rejected")); // ✅ signals error
         }
         //const uploadPath = path.join("./", 'principal', req.body.folderName);
         let folderName = "";
@@ -228,7 +228,7 @@ const storage = multer.diskStorage({
         if(req.checkArchiveFolder)
         {
             console.log("Vous ne pouvez pas ajouter des fichiers dans un dossier archivé.");
-            return;
+            return cb(new Error("Upload rejected")); // ✅ signals error
         }
 
         if(!pathsObj)
