@@ -362,6 +362,7 @@ const checkTargetFolder = (req,res,next)=>{
     console.log(req.body);
     if(req.app.locals.archives.find(value=> folderName && folderName.startsWith(value) ) )
     {
+        console.log("Vous ne pouvez pas ajouter des fichiers dans un dossier archivé.");
         res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
         return;
     }
