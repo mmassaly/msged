@@ -36,14 +36,13 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const {room,noFolder,loadFolder,paths,pathsObj} = req.body;
         var {parentPath,serverFolder} = req.body;//console.trace(req.body);
-        console.log(req.app.locals.archives);
-        console.log(req.body);
-        console.log(req.body.folderName);
-        if(req.app.locals.archives.find(value=> req.folderName && req.folderName.startsWith(value) ) )
+       
+        if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
         {
             res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
             return;
         }
+
         if(!pathsObj)
         {
             req.body.pathsObj = JSON.parse(paths);
@@ -225,10 +224,8 @@ const storage = multer.diskStorage({
         const year = date.getFullYear();
         let fileName = "base_"+date.toLocaleDateString().split('/').join('-')+"_"+date.getHours()+"-"+date.getMinutes()+"-"+date.getSeconds()+"_base_"+Buffer.from(file.originalname, 'latin1').toString('utf8');
         let folderName = "";
-        console.log(req.app.locals.archives);
-        console.log(req.body);
-        console.log(req.body.folderName);
-        if(req.app.locals.archives.find(value=> req.folderName && req.folderName.startsWith(value) ) )
+        
+        if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
         {
             res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
             return;
