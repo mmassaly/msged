@@ -373,6 +373,11 @@ router.delete('/', (req, res) => {
     //console.log(`Files uploaded to folder: ${folder}`);
     if(filePath  && parentPath && fs.existsSync(path.join("./",filePath)))
     {
+        if( req.app.locals.archives.find(value=> path.join("./",filePath).startsWith(value) ) )
+        {
+            res.status(400).json({message:"Ce document est un fichier archivé. Vous ne pouvez pas le supprimer."});
+            return;
+        }
         try{
         fs.unlinkSync(filePath);
         var command = {entryparams:{fieldName:"directories",operation:"remove_file"}

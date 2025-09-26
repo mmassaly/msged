@@ -31,6 +31,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       type:stats.isDirectory()?undefined:path.basename(folderPath).split(".")[path.basename(folderPath).split(".").length-1],
       path: path.join(parentPath,folderPath),
       parentPath: parentPath,
+      isArchived: req?req.app.locals.archives.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
       subdirectories: []
     };
@@ -43,6 +44,10 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       ).filter(item => item !== undefined);
       if(start)
         RecursiveSplitTest2(mappedDirectory.path,req.app.locals.roomDic);
+    }
+    if(mapDirectory.isArchived)
+    {
+        setKeyValueofSubdirectories(mapDirectory,"isArchived",true)
     }
     return ((req.session && req.session.type == "secret" && mappedDirectory.isSecret) ||!mappedDirectory.isSecret )? mappedDirectory: undefined ;
   }
@@ -149,6 +154,38 @@ router.get('/officefile', (req, res) => {
     }
    console.log("done");
 });
+router.put('/archiveFolder',authenticateToken,(req,res)=>{
+    const {folderPath} = req.body;
+    var fullPath = path.join('./',folderPath.replaceAll('\\',path.sep).replaceAll('/',path.sep));
+    console.log("Archiving folder "+fullPath);
+    if(!fs.existsSync(fullPath))
+    {
+        res.status(400).json({message:"Ce document n'existe pas."});
+        return;
+    }
+    else if(!fs.lstatSync(fullPath).isDirectory())
+    {
+        res.status(400).json({message:"Ce document n'est pas un dossier."});
+        return;
+    }
+    try{
+        if( !req.app.locals.archives.find(value=> value == fullPath) )
+        {
+            req.app.locals.archives.push(fullPath);
+            fs.writeFileSync('./modules/Data/archives.json',JSON.stringify(req.app.locals.archives));
+            var command = {entryparams:{fieldName:"directories",operation:"archive_directory"},
+            command:{path:fullPath,name:path.basename(fullPath),
+                isDirectory:true,parentPath:path.dirname(fullPath),isArchived:true}};
+            roomUpdates(req,fullPath,command);
+        }
+    }catch(err)
+    {
+        res.status(500).json({message:"Le dossier n'a pas pu être archivé."});
+        return;
+    }
+    res.json({message:"Dossier archivé avec success!"});
+});
+
 router.post('/renameFolder',authenticateToken,(req,res)=>{
     const {oldPath,parentPath,name} = req.body;
     var newPath = path.join('./',parentPath.replaceAll('\\',path.sep).replaceAll('/',path.sep),name);
@@ -157,6 +194,16 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
     if(fs.existsSync(newPath) && oldPath == newPath)
     {
         res.status(400).json({message:"Ce document existe déjà."});
+        return;
+    }
+    else if(!fs.existsSync(oldPath))
+    {
+        res.status(400).json({message:"Ce document n'existe pas."});
+        return;
+    }
+    else if(req.app.locals.archives.find(value=> value == oldPath))
+    {
+        res.status(400).json({message:"Ce document est un dossier archivé. Vous ne pouvez pas le renommer."});
         return;
     }
     try{
@@ -452,5 +499,14 @@ function recursiveFindDir (dir,givenPath){
     });
     return foundIntoAccumulation;
 }
-
+const setKeyValueofSubdirectories = (dir,key,value)=>
+{
+  if(dir && dir.isDirectory && dir.subdirectories)
+  {
+    dir.subdirectories.forEach(subdir=>{
+      subdir[key] = value;
+      setKeyValueofSubdirectories(subdir,key,value);
+    });
+  }
+}
 module.exports = {router,recursiveFindDir,mapDirectory,writeFile,readFile,RenameRoomsContainingOldPathWithNewPath };

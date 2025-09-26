@@ -14,6 +14,8 @@ curl -X POST http://51.38.190.202:3039/api/authentifications/login -H "Content-T
 Simple and direct—great for one-off transfers.
 scp /path/to/local/file username@remote_host:/path/to/remote/destination
 
+scp ubuntu@51.38.190.202:/home/ubuntu/documents/msged/modules/Data/roomDic.json C:\Users\idris\Documents
+
 
 - To copy a directory:
 scp -r /local/folder username@remote_host:/remote/folder

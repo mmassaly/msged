@@ -55,6 +55,17 @@ if(secretFoldersStr !== undefined)
 else
     app.locals.secretFolders = [];
 
+const archivedFoldersStr = directoryRoutes.readFile('./modules/Data/archives.json')
+if(archivedFoldersStr !== undefined)
+{
+    app.locals.archives = JSON.parse(archivedFoldersStr);
+    console.log(app.locals.archives);
+}
+else
+    app.locals.archives = [];
+
+
+
 app.use(cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
