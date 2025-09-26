@@ -437,4 +437,11 @@ router.post('/json', authenticateToken, (req, res) => {
     req.on('data',(chunk)=> console.log(chunk));
     res.json({ message: 'Les fichiers sont chargés avec succès!' });
 });
+// Error handler
+router.use((err, req, res, next) => {
+  if (err.message === 'Upload rejected') {
+    next();
+  }
+});
+
 module.exports = router;
