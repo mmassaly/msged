@@ -39,7 +39,6 @@ const storage = multer.diskStorage({
        
         if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
         {
-            res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
             return;
         }
 
@@ -227,8 +226,7 @@ const storage = multer.diskStorage({
         
         if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
         {
-            res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
-            return;
+           return;
         }
 
         if(!pathsObj)
@@ -371,6 +369,11 @@ router.post('/', authenticateToken, upload.array('files'), (req, res) => {
     //const folder = req.body.folder; // Get the folder to save into
     // Save metadata in the database (if necessary)
     //console.log(`Files uploaded to folder: ${folder}`);
+    if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
+    {
+        res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
+        return;
+    }    
     console.log("******************************************");
     console.log(req.body);
     req.on('data',(chunk)=> console.log(chunk));
