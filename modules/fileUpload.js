@@ -36,12 +36,7 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const {room,noFolder,loadFolder,paths,pathsObj} = req.body;
         var {parentPath,serverFolder} = req.body;//console.trace(req.body);
-       
-        if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
-        {
-            return;
-        }
-
+        
         if(!pathsObj)
         {
             req.body.pathsObj = JSON.parse(paths);
@@ -223,11 +218,6 @@ const storage = multer.diskStorage({
         const year = date.getFullYear();
         let fileName = "base_"+date.toLocaleDateString().split('/').join('-')+"_"+date.getHours()+"-"+date.getMinutes()+"-"+date.getSeconds()+"_base_"+Buffer.from(file.originalname, 'latin1').toString('utf8');
         let folderName = "";
-        
-        if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
-        {
-           return;
-        }
 
         if(!pathsObj)
         {
@@ -365,15 +355,22 @@ const upload = multer({ storage ,limits: {
     files: Infinity,
     parts: Infinity
   }});
-router.post('/', authenticateToken, upload.array('files'), (req, res) => {
-    //const folder = req.body.folder; // Get the folder to save into
-    // Save metadata in the database (if necessary)
-    //console.log(`Files uploaded to folder: ${folder}`);
-    if(req.app.locals.archives.find(value=> req.body.folderName && req.body.folderName.startsWith(value) ) )
+const checkTargetFolder = (req,res,next)=>{
+    var {folderName} = req.body;
+    console.log("Checking target folder..........................");
+    console.log(folderName);
+    console.log(req.body);
+    if(req.app.locals.archives.find(value=> folderName && folderName.startsWith(value) ) )
     {
         res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
         return;
-    }    
+    }
+    next();
+}
+router.post('/', authenticateToken,multer().none(),checkTargetFolder, upload.array('files'), (req, res) => {
+    //const folder = req.body.folder; // Get the folder to save into
+    // Save metadata in the database (if necessary)
+    //console.log(`Files uploaded to folder: ${folder}`);
     console.log("******************************************");
     console.log(req.body);
     req.on('data',(chunk)=> console.log(chunk));
