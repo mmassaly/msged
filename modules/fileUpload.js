@@ -439,7 +439,8 @@ router.post('/json', authenticateToken, (req, res) => {
 });
 // Error handler
 router.use((err, req, res, next) => {
-  if (err.message === 'Upload rejected') {
+    console.log(err);
+    if (err.message === 'Upload rejected') {
     next();
   }
 });
