@@ -357,8 +357,9 @@ const upload = multer({ storage ,limits: {
   }});
 const checkTargetFolder = (req,res,next)=>{
     var {parentPath,folderName} = req.body;
+    console.log(req.body);
     console.log(folderName+"..................");
-    if(req.app.locals.archives.find(value=> parentPath && folderName.startsWith(value) ) )
+    if(req.app.locals.archives.find(value=> folderName && folderName.startsWith(value) ) )
     {
         res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
         return;
