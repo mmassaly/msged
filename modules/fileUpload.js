@@ -41,7 +41,12 @@ const storage = multer.diskStorage({
         {
             req.body.pathsObj = JSON.parse(paths);
         }
-        
+        checkArchiveFolder(req);
+        if(req.checkArchiveFolder)
+        {
+            console.log("Vous ne pouvez pas ajouter des fichiers dans un dossier archivé.");
+            return;
+        }
         //const uploadPath = path.join("./", 'principal', req.body.folderName);
         let folderName = "";
         //console.log(req.body.pathsObj);
@@ -219,6 +224,13 @@ const storage = multer.diskStorage({
         let fileName = "base_"+date.toLocaleDateString().split('/').join('-')+"_"+date.getHours()+"-"+date.getMinutes()+"-"+date.getSeconds()+"_base_"+Buffer.from(file.originalname, 'latin1').toString('utf8');
         let folderName = "";
 
+        checkArchiveFolder(req);
+        if(req.checkArchiveFolder)
+        {
+            console.log("Vous ne pouvez pas ajouter des fichiers dans un dossier archivé.");
+            return;
+        }
+
         if(!pathsObj)
         {
             req.body.pathsObj = JSON.parse(paths);
@@ -355,27 +367,33 @@ const upload = multer({ storage ,limits: {
     files: Infinity,
     parts: Infinity
   }});
-const checkTargetFolder = (req,res,next)=>{
+const checkArchiveFolder = (req)=>{
     var {folderName} = req.body;
     console.log("Checking target folder..........................");
     console.log(folderName);
     console.log(req.body);
     if(req.app.locals.archives.find(value=> folderName && folderName.startsWith(value) ) )
     {
+        req.checkArchiveFolder = true;
         console.log("Vous ne pouvez pas ajouter des fichiers dans un dossier archivé.");
-        res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
         return;
     }
-    next();
+    req.checkArchiveFolder = false;
+    //next(); //not longer a middleware
 }
-router.post('/', authenticateToken,multer().any(),checkTargetFolder, upload.array('files'), (req, res) => {
+router.post('/', authenticateToken, upload.array('files'), (req, res) => {
     //const folder = req.body.folder; // Get the folder to save into
     // Save metadata in the database (if necessary)
     //console.log(`Files uploaded to folder: ${folder}`);
     console.log("******************************************");
     console.log(req.body);
-    req.on('data',(chunk)=> console.log(chunk));
-    res.json({ message: 'Les fichiers sont chargés avec succès!' });
+    //req.on('data',(chunk)=> console.log(chunk));
+    
+    if(req.body.checkArchiveFolder)
+        res.status(400).
+            json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
+    else    
+        res.json({ message: 'Les fichiers sont chargés avec succès!' });
 });
 
 router.delete('/', (req, res) => {
