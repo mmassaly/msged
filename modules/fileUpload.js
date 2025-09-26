@@ -367,7 +367,7 @@ const checkTargetFolder = (req,res,next)=>{
     }
     next();
 }
-router.post('/', authenticateToken,multer().none(),checkTargetFolder, upload.array('files'), (req, res) => {
+router.post('/', authenticateToken,multer().any(),checkTargetFolder, upload.array('files'), (req, res) => {
     //const folder = req.body.folder; // Get the folder to save into
     // Save metadata in the database (if necessary)
     //console.log(`Files uploaded to folder: ${folder}`);
