@@ -44,11 +44,13 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       ).filter(item => item !== undefined);
       if(start)
         RecursiveSplitTest2(mappedDirectory.path,req.app.locals.roomDic);
+      
+        if(mappedDirectory.isArchived)
+        {
+            setKeyValueofSubdirectories(mappedDirectory,"isArchived",true);
+        }
     }
-    if(mapDirectory.isArchived)
-    {
-        setKeyValueofSubdirectories(mapDirectory,"isArchived",true)
-    }
+
     return ((req.session && req.session.type == "secret" && mappedDirectory.isSecret) ||!mappedDirectory.isSecret )? mappedDirectory: undefined ;
   }
 function readSize(path)
