@@ -355,8 +355,16 @@ const upload = multer({ storage ,limits: {
     files: Infinity,
     parts: Infinity
   }});
-
-router.post('/', authenticateToken, upload.array('files'), (req, res) => {
+const checkTargetFolder = (req,res,next)=>{
+    var {parentPath} = req.body;
+    if(req.app.locals.archives.find(value=> parentPath && parentPath.startsWith(value) ) )
+    {
+        res.status(400).json({message:"Vous ne pouvez pas ajouter des fichiers dans un dossier archivé."});
+        return;
+    }
+    next();
+}
+router.post('/', authenticateToken,checkTargetFolder, upload.array('files'), (req, res) => {
     //const folder = req.body.folder; // Get the folder to save into
     // Save metadata in the database (if necessary)
     //console.log(`Files uploaded to folder: ${folder}`);
