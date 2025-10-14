@@ -32,6 +32,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       path: path.join(parentPath,folderPath),
       parentPath: parentPath,
       isArchived: req?req.app.locals.archives.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
+      isCV: req?req.app.locals.cvsDirs.find(value=>path.join(parentPath,folderPath).startsWith(value))?true:false:false,
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
       subdirectories: []
     };
@@ -103,7 +104,106 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+router.get('/CV',authenticateToken,(req,res)=>{
+    res.json(req.app.locals.cvs);
+});
 
+const postCVDir = (req,res)=>{
+    const {givenPath, parentPath} = req.body;
+    const index = req.app.locals.cvDirs.findIndex(value=> value == givenPath);
+    
+    if(index < 0)
+    {
+        req.app.locals.cvDirs.push(givenPath);
+        fs.writeFileSync('./modules/Data/cvFolders.json',JSON.stringify(req.app.locals.cvDirs));
+        
+        var command = {entryparams:{fieldName:"CV",operation:"set_cv_dir"},
+            command:{path:givenPath,name:path.basename(givenPath),
+                isDirectory:fs.statSync(givenPath).isDirectory(),parentPath:path.dirname(givenPath),
+                isCV:true
+        }};
+        try
+        {
+            mapDirectory("./",givenPath,"",req);
+            roomUpdates(req,givenPath,command);
+        }
+        catch(err)
+        {
+            //res.status(500).type("text").write(err.message +"\n"+err.stack);
+            return response.status(500).json( {message:"Il y a eu une erreur ",message2:err.message});
+        }
+        res.json({message:`${givenPath} est maintenant un dossier pour CVs.`});
+    }
+    else 
+    {
+        req.app.locals.cvDirs.splice(index,1);
+        fs.writeFileSync('./modules/Data/cvFolders.json',JSON.stringify(req.app.locals.cvDirs));
+        var command = {entryparams:{fieldName:"CV",operation:"set_cv_dir"},
+            command:{path:givenPath,name:path.basename(givenPath),
+                isDirectory:fs.statSync(givenPath).isDirectory(),parentPath:path.dirname(givenPath),
+                isCV:false
+        }};
+        try
+        {
+            mapDirectory("./",givenPath,"",req);
+            roomUpdates(req,givenPath,command);
+        }
+        catch(err)
+        {
+            //res.status(500).type("text").write(err.message +"\n"+err.stack);
+            return response.status(500).json( {message:"Il y a eu une erreur ",message2:err.message});
+        }
+        res.json({message:`${givenPath} est maintenant un dossier ordinaire`});
+    }
+};
+const putCVDir = (req,res)=>{
+    const {givenPath,fullName,prefix,competencies,experiences,degrees} = req.body;
+    
+    var command = {entryparams:{fieldName:"CV",operation:"upload_cv"},
+            command:{path:givenPath,name:path.basename(givenPath),
+                isDirectory:fs.statSync(givenPath).isDirectory(),parentPath:path.dirname(givenPath),
+                push:[{location:"competencies",value: competencies}
+                    ,{location:"degrees",value: degrees}
+                    ,{location:"experiences", value: experiences}]
+                ,put:[{location:"fullName", value: fullName},{location:"prefix",value:prefix}]
+    }};
+        
+        var cvInMemory = req.app.locals.cvs[givenPath];
+        if(!cvInMemory)
+        {
+            cvInMemory = {competencies:[],degrees:[],experiences:[]};
+            req.app.locals.cvs[givenPath] = cvInMemory;
+        }
+
+        cvInMemory.path = givenPath;
+        cvInMemory.fullName = fullName;
+        cvInMemory.prefix = prefix;
+
+        cvInMemory.competencies.push(...competencies);
+        cvInMemory.degrees.push(...degrees);
+        cvInMemory.experiences.push(...experiences);
+        
+        if(!cvInMemory.changes)
+            cvInMemory.changes = [];
+        
+        cvInMemory.changes.push(command);
+        
+        try{
+        fs.writeFileSync('./modules/Data/cvs.json',JSON.stringify(req.app.locals.cvs));
+        mapDirectory("./",givenPath,"",req);
+        roomUpdates(req,givenPath,command);
+        }catch(err)
+        {
+            //return response.status(500).type('text').text(err.message);
+            return response.status(500).json( {message:"Il y a eu une erreur ",message2:err.message});
+        }
+        res.json({message:"Le CV rattâché à "+fullName+" a été rattaché au dossier "+givenPath+"."});
+        return;
+    
+};
+
+router.post('/CV',authenticateToken,postCVDir);
+router.put('/CV',authenticateToken,putCVDir);
 // Fetch directories
 router.get('/', authenticateToken, (req, res) => {
     //console.log(req.user);
@@ -511,4 +611,6 @@ const setKeyValueofSubdirectories = (dir,key,value)=>
     });
   }
 }
-module.exports = {router,recursiveFindDir,mapDirectory,writeFile,readFile,RenameRoomsContainingOldPathWithNewPath };
+module.exports = {router,recursiveFindDir,mapDirectory,writeFile
+    ,readFile,RenameRoomsContainingOldPathWithNewPath,authenticateToken
+    ,postCVDir,putCVDir};

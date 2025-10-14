@@ -64,7 +64,21 @@ if(archivedFoldersStr !== undefined)
 else
     app.locals.archives = [];
 
+const cvsDirFoldersStr = directoryRoutes.readFile('./modules/Data/cvFolders.json')
+if(cvsDirFoldersStr !== undefined)
+{
+    app.locals.cvDirs = JSON.parse(cvsDirFoldersStr);
+}
+else
+    app.locals.cvDirs = [];
 
+const cvsStr = directoryRoutes.readFile('./modules/Data/cvs.json')
+if(cvsStr !== undefined)
+{
+    app.locals.cvs = JSON.parse(cvsStr);
+}
+else
+    app.locals.cvs = [];
 
 app.use(cors({
     origin: "*",
