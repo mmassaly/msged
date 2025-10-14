@@ -32,7 +32,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       path: path.join(parentPath,folderPath),
       parentPath: parentPath,
       isArchived: req?req.app.locals.archives.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
-      isCV: req?req.app.locals.cvsDirs.find(value=>path.join(parentPath,folderPath).startsWith(value))?true:false:false,
+      isCV: req?req.app.locals.cvDirs.find(value=>path.join(parentPath,folderPath).startsWith(value))?true:false:false,
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
       subdirectories: []
     };
