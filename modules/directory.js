@@ -105,7 +105,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 router.get('/CV',authenticateToken,(req,res)=>{
-    res.json(req.app.locals.cvDirs);
+    res.json({cvDirs:req.app.locals.cvDirs,cvDetailed:req.app.locals.cvs});
 });
 
 const postCVDir = (req,res)=>{
