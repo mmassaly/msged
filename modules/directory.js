@@ -179,9 +179,13 @@ const putCVDir = (req,res)=>{
         cvInMemory.fullName = fullName;
         cvInMemory.prefix = prefix;
 
-        cvInMemory.competencies.push(...competencies);
-        cvInMemory.degrees.push(...degrees);
-        cvInMemory.experiences.push(...experiences);
+        //cvInMemory.competencies.push(...competencies);
+        //cvInMemory.degrees.push(...degrees);
+        //cvInMemory.experiences.push(...experiences);
+        
+        cvInMemory.competencies = competencies;
+        cvInMemory.degrees = degrees;
+        cvInMemory.experiences = experiences;
         
         if(!cvInMemory.changes)
             cvInMemory.changes = [];
