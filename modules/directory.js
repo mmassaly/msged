@@ -157,7 +157,7 @@ const postCVDir = (req,res)=>{
     }
 };
 const putCVDir = (req,res)=>{
-    const {givenPath,fullName,prefix,competencies,experiences,degrees} = req.body;
+    const {givenPath,parentPath,fullName,prefix,competencies,experiences,degrees} = req.body;
     
     var command = {entryparams:{fieldName:"CV",operation:"upload_cv"},
             command:{path:givenPath,name:path.basename(givenPath),
