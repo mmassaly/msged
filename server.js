@@ -78,7 +78,7 @@ if(cvsStr !== undefined)
     app.locals.cvs = JSON.parse(cvsStr);
 }
 else
-    app.locals.cvs = [];
+    app.locals.cvs = {};
 
 app.use(cors({
     origin: "*",

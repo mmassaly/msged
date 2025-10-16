@@ -189,9 +189,9 @@ const putCVDir = (req,res)=>{
         cvInMemory.changes.push(command);
         
         try{
-        fs.writeFileSync('./modules/Data/cvs.json',JSON.stringify(req.app.locals.cvs));
-        mapDirectory("./",parentPath,"",req);
-        roomUpdates(req,parentPath,command);
+            fs.writeFileSync('./modules/Data/cvs.json',JSON.stringify(req.app.locals.cvs));
+            mapDirectory("./",parentPath,"",req);
+            roomUpdates(req,parentPath,command);
         }catch(err)
         {
             //return response.status(500).type('text').text(err.message);
