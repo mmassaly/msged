@@ -175,9 +175,9 @@ const putCVDir = (req,res)=>{
             req.app.locals.cvs[givenPath] = cvInMemory;
         }
 
-        cvInMemory.path = givenPath;
-        cvInMemory.fullName = fullName;
-        cvInMemory.prefix = prefix;
+        cvInMemory.path = givenPath?givenPath:[];
+        cvInMemory.fullName = fullName?fullName:[];
+        cvInMemory.prefix = prefix?prefix:[];
 
         //cvInMemory.competencies.push(...competencies);
         //cvInMemory.degrees.push(...degrees);
