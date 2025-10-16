@@ -195,7 +195,7 @@ const putCVDir = (req,res)=>{
         }catch(err)
         {
             //return response.status(500).type('text').text(err.message);
-            return response.status(500).json( {message:"Il y a eu une erreur ",message2:err.message});
+            return res.status(500).json( {message:"Il y a eu une erreur ",message2:err.message});
         }
         res.json({message:"Le CV rattâché à "+fullName+" a été rattaché au dossier "+givenPath+"."});
         return;
