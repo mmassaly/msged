@@ -190,8 +190,8 @@ const putCVDir = (req,res)=>{
         
         try{
         fs.writeFileSync('./modules/Data/cvs.json',JSON.stringify(req.app.locals.cvs));
-        mapDirectory("./",givenPath,"",req);
-        roomUpdates(req,givenPath,command);
+        mapDirectory("./",parentPath,"",req);
+        roomUpdates(req,parentPath,command);
         }catch(err)
         {
             //return response.status(500).type('text').text(err.message);
