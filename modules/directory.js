@@ -574,12 +574,14 @@ function deleteCVHelper(foundDir,req)
                 req.app.locals.cvDirs.splice(cvIndex,1);
                 fs.writeFileSync('./modules/Data/cvFolders.json'
                     ,JSON.stringify(req.app.locals.cvDirs));
+                console.log(`Deleted CV folder ${foundDir.path}`);
             }
             if(req.app.locals.cvs[foundDir.path])
             {
                 delete req.app.locals.cvs[foundDir.path];
                 fs.writeFileSync('./modules/Data/cvs.json'
                     ,JSON.stringify(req.app.locals.cvs));
+                    console.log(`Deleted CV data for ${foundDir.path}`);
             }
     }
 }
@@ -588,12 +590,12 @@ router.delete('/:room/:path', authenticateToken, (req, res) => {
     const { room,path } = req.params;
     const directories =  mapDirectory("./","principal","",req);
     const removeDirectory = (dirs) => {
-        const founDir = recursiveFindDir(dirs,path);
-        if (founDir !== -1) {
+        const foundDir = recursiveFindDir(dirs,path);
+        if (foundDir !== -1) {
             try
             {
                 fs.unlinkSync(path.join("./",foundDir.path));
-                deleteCVHelper(founDir,req);
+                deleteCVHelper(foundDir,req);
                 roomUpdates(req,room,"getdirUpdates");
                 return true;
             }catch(err)
