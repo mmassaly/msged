@@ -563,6 +563,26 @@ var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
     return returnValue;
 };
 
+function deleteCVHelper(foundDir,req)
+{
+    if(founDir.isCV)
+    {
+            const cvIndex = req.app.locals.cvDirs.
+            findIndex(value=> value == foundDir.path);
+            if(cvIndex >= 0)
+            {
+                req.app.locals.cvDirs.splice(cvIndex,1);
+                fs.writeFileSync('./modules/Data/cvFolders.json'
+                    ,JSON.stringify(req.app.locals.cvDirs));
+            }
+            if(req.app.locals.cvs[foundDir.path])
+            {
+                delete req.app.locals.cvs[foundDir.path];
+                fs.writeFileSync('./modules/Data/cvs.json'
+                    ,JSON.stringify(req.app.locals.cvs));
+            }
+    }
+}
 // Delete a directory
 router.delete('/:room/:path', authenticateToken, (req, res) => {
     const { room,path } = req.params;
@@ -573,6 +593,7 @@ router.delete('/:room/:path', authenticateToken, (req, res) => {
             try
             {
                 fs.unlinkSync(path.join("./",foundDir.path));
+                deleteCVHelper(founDir,req);
                 roomUpdates(req,room,"getdirUpdates");
                 return true;
             }catch(err)
