@@ -565,7 +565,7 @@ var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
 
 function deleteCVHelper(foundDir,req)
 {
-    if(founDir.isCV)
+    if(foundDir.isCV)
     {
             const cvIndex = req.app.locals.cvDirs.
             findIndex(value=> value == foundDir.path);
