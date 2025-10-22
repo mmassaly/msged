@@ -226,7 +226,8 @@ router.get('/logout', async (req, res) => {
     }	
     res.status(200).json({message:"Vous êtes déconnectés avec succès."});
     const value = req.app.locals.sessions.findIndex(user => user == userFound);
-    req.app.locals.splice(value,1); 	
+    if(value>=0)
+    req.app.locals.sessions.splice(value,1); 	
   }
   else
   {
