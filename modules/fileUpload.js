@@ -395,7 +395,26 @@ router.post('/', authenticateToken, upload.array('files'), (req, res) => {
     else    
         res.json({ message: 'Les fichiers sont chargés avec succès!' });
 });
-
+function deleteCVHelper(path,req)
+{
+    const cvIndex = req.app.locals.cvDirs.
+    findIndex(value=> value == path);
+    if(cvIndex >= 0)
+    {
+        req.app.locals.cvDirs.splice(cvIndex,1);
+        fs.writeFileSync('./modules/Data/cvFolders.json'
+            ,JSON.stringify(req.app.locals.cvDirs));
+        console.log(`Deleted CV folder ${path}`);
+    }
+    if(req.app.locals.cvs[path])
+    {
+        delete req.app.locals.cvs[path];
+        fs.writeFileSync('./modules/Data/cvs.json'
+            ,JSON.stringify(req.app.locals.cvs));
+            console.log(`Deleted CV data for ${path}`);
+    }
+    
+}
 router.delete('/', (req, res) => {
     const {filePath,parentPath} = req.body; // Get the folder to save into
     // Save metadata in the database (if necessary)
@@ -410,9 +429,10 @@ router.delete('/', (req, res) => {
         }
         try{
         fs.unlinkSync(filePath);
-        var command = {entryparams:{fieldName:"directories",operation:"remove_file"}
-        ,command:{path:filePath,name:path.basename(filePath),parentPath:parentPath}};
-        roomUpdates(req,parentPath,command);
+            var command = {entryparams:{fieldName:"directories",operation:"remove_file"}
+            ,command:{path:filePath,name:path.basename(filePath),parentPath:parentPath}};
+            deleteCVHelper(filePath,req);
+            roomUpdates(req,parentPath,command);
         }catch(err)
         {
             res.status(500).json({message: `${filePath} n'a pu être enlevé!`});
