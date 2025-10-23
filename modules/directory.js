@@ -176,10 +176,11 @@ const putCVDir = (req,res)=>{
             req.app.locals.cvs[givenPath] = cvInMemory;
         }
 
-        cvInMemory.path = givenPath?givenPath:[];
-        cvInMemory.fullName = fullName?fullName:[];
-        cvInMemory.prefix = prefix?prefix:[];
-
+        cvInMemory.path = givenPath?givenPath:"";
+        cvInMemory.fullName = fullName?fullName:"";
+        cvInMemory.prefix = prefix?prefix:"";
+        cvInMemory.functionTitle = functionTitle?functionTitle:"";
+        cvInMemory.functionTitleTyped = functionTitleTyped?functionTitleTyped:"";
         //cvInMemory.competencies.push(...competencies);
         //cvInMemory.degrees.push(...degrees);
         //cvInMemory.experiences.push(...experiences);
