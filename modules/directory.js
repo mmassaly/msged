@@ -593,7 +593,9 @@ router.delete('/', authenticateToken, (req, res) => {
    
     console.log("Deleting directory at path: ", decodeURIComponent(path)); 
     console.log("Deleting a directory with parent path: ", decodeURI(parentPath)); 
-    const directories =  mapDirectory("./",path,"",req);
+    path = decodeURIComponent(path);
+    parentPath = decodeURIComponent(parentPath);
+    const directories =  mapDirectory("./","","",req);
     console.log(directories? Object.entries(directories):"No directories found");
     const removeDirectory = (dirs) => {
         const foundDir = recursiveFindDir(dirs,path);
