@@ -589,7 +589,7 @@ function deleteCVHelper(foundDir,req)
 }
 // Delete a directory
 router.delete('/', authenticateToken, (req, res) => {
-    const { path } = req.body;
+    const { path } = req.query;
     const directories =  mapDirectory("./",path,"",req);
     const removeDirectory = (dirs) => {
         const foundDir = recursiveFindDir(dirs,path);
