@@ -598,7 +598,7 @@ router.delete('/', authenticateToken, (req, res) => {
     const directories =  mapDirectory("./",parentPath,"",req);
     console.log(directories? Object.entries(directories):"No directories found");
     const removeDirectory = (dirs) => {
-        console.log(dirs? Object.entries(dirs):"No directories found");
+     
         const foundDir = recursiveFindDir(dirs,path);
         if (foundDir !== -1) {
             try
@@ -627,7 +627,7 @@ router.delete('/', authenticateToken, (req, res) => {
 function recursiveFindDir (dir,givenPath){ 
     if(dir.path == givenPath)
         return dir;
-    var subdirfound = dir.subdirectories.find(subdir => subdir.path == givenPath);
+    var subdirfound = dir.subdirectories.find(subdir =>{console.log(subdir.path); return subdir.path == givenPath});
     if(subdirfound !=  undefined)
     {
         return subdirfound;
