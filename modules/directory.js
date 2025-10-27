@@ -598,7 +598,7 @@ router.delete('/:path', authenticateToken, (req, res) => {
             {
                 fs.unlinkSync(path.join("./",foundDir.path));
                 deleteCVHelper(foundDir,req);
-                var command = {entryparams:{fieldName:"directories",operation:"delete_directory"},command:{path:uploadPath,name:name,isDirectory:true,parentPath:parent.path}};
+                var command = {entryparams:{fieldName:"directories",operation:"delete_directory"},command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
                 roomUpdates(req,path,command);
                 return true;
             }catch(err)
