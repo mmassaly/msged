@@ -33,7 +33,44 @@ rm -rf ~/documents/msged
 
 
 This will delete the msged folder inside your documents directory, along with everything inside it.
+********************************
+Google authentificator
+sudo apt update && sudo apt upgrade
+- Install Google Authenticator PAM module
+sudo apt install libpam-google-authenticator
 
+- Configure for your user
+google-authenticator
+
+- Scan the QR code with your authenticator app (Google Authenticator, Microsoft Authenticator, etc.)
+- Save the emergency scratch codes
+In this comprehensive video tutorial, we delve into the vital aspect of enhancing the security of your SSH connections on Ubuntu using Time-Based One-Time Password (TOTP) authentication with Google Authenticator. SSH (Secure Shell) is a fundamental tool for remote system administration, but ensuring its security is paramount in today's digital landscape.
+
+Throughout the video, we walk you through a step-by-step process, starting with the installation of Google Authenticator on your Ubuntu system. We explain how to configure SSH to use TOTP authentication, adding an extra layer of protection to your SSH access.
+
+Commands:
+sudo apt install -y libpam-google-authenticator
+google-authenticator
+sudo nano /etc/ssh/sshd_config
+    Set KbdInteractiveAuthentication to yes
+sudo nano /etc/pam.d/sshd
+   Look for @include common-auth add
+            two-factor authentication via Google Authenticator
+            auth   required   pam_google_authenticator.so
+sudo systemctl restart ssh
+*******************************************************
+Your new secret key is: YI6UCOTL4N52SRQFQ3FU3YDJ3Qv
+Enter code from app (-1 to skip): 966479
+***********************************************
+
+ Using less or more to View Files or Output
+These are pagers used to scroll through long text.
+🔼 Go to Top:
+- Press g
+🔽 Go to Bottom:
+- Press G
+
+**********************************************
 ⚠️ Be Careful!
 - rm -rf / is infamous—it deletes everything. Never run it unless you're absolutely sure.
 - You can use ls directory_name first to inspect contents before deleting.
