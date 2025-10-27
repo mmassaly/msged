@@ -600,7 +600,7 @@ router.delete('/', authenticateToken, (req, res) => {
     console.log(directories? Object.entries(directories):"No directories found");
     const removeDirectory = (dirs) => {
      
-        const foundDir = recursiveFindDir(dirs,givenPath);
+        const foundDir = recursiveFindDir(dirs,path);
         console.log("Found directory to delete: ", foundDir);
         if (foundDir) {
             console.log("Attempting to delete directory: ", foundDir.path);
@@ -609,8 +609,8 @@ router.delete('/', authenticateToken, (req, res) => {
                 fs.unlinkSync(pathObj.join("./",foundDir.path));
                 deleteCVHelper(foundDir,req);
                 var command = {entryparams:{fieldName:"directories",operation:"delete_directory"}
-                    ,command:{path:givenPath,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
-                roomUpdates(req,givenPath,command);
+                    ,command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
+                roomUpdates(req,path,command);
                 console.log(`Directory ${foundDir.path} deleted successfully.`);
                 return true;
             }catch(err)
