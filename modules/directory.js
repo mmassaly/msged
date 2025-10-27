@@ -591,7 +591,7 @@ function deleteCVHelper(foundDir,req)
 router.delete('/', authenticateToken, (req, res) => {
     var { path,parentPath } = req.query;
    
-    console.log("Deleting directory at path: ", decodeURI(path)); 
+    console.log("Deleting directory at path: ", decodeURIComponent(path)); 
     console.log("Deleting a directory with parent path: ", decodeURI(parentPath)); 
     const directories =  mapDirectory("./",path,"",req);
     console.log(directories? Object.entries(directories):"No directories found");
