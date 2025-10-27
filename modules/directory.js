@@ -627,7 +627,7 @@ router.delete('/', authenticateToken, (req, res) => {
 function recursiveFindDir (dir,givenPath){ 
     if(dir.path == givenPath)
         return dir;
-    var subdirfound = dir.subdirectories.find(subdir =>{console.log(subdir.path+'='+givenPath+" is "+ subdir.path == givenPath); return subdir.path == givenPath});
+    var subdirfound = dir.subdirectories.find(subdir =>{console.log(subdir.path+'='+givenPath+" is "+ (subdir.path == givenPath)); return subdir.path == givenPath});
     if(subdirfound !=  undefined)
     {
         return subdirfound;
