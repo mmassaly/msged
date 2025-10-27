@@ -602,6 +602,7 @@ router.delete('/', authenticateToken, (req, res) => {
         const foundDir = recursiveFindDir(dirs,path);
         console.log("Found directory to delete: ", foundDir);
         if (foundDir) {
+            console.log("Attempting to delete directory: ", foundDir.path);
             try
             {
                 fs.unlinkSync(path.join("./",foundDir.path));
@@ -613,6 +614,7 @@ router.delete('/', authenticateToken, (req, res) => {
                 return true;
             }catch(err)
             {
+                console.error("Error deleting directory: ", err);
             }
         }
         return false;
