@@ -600,6 +600,7 @@ router.delete('/', authenticateToken, (req, res) => {
     const removeDirectory = (dirs) => {
      
         const foundDir = recursiveFindDir(dirs,path);
+        console.log("Found directory to delete: ", foundDir);
         if (foundDir) {
             try
             {
