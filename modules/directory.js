@@ -598,14 +598,15 @@ router.delete('/', authenticateToken, (req, res) => {
     const directories =  mapDirectory("./",parentPath,"",req);
     console.log(directories? Object.entries(directories):"No directories found");
     const removeDirectory = (dirs) => {
-        console.log(directories? Object.entries(dirs):"No directories found");
+        console.log(dirs? Object.entries(dirs):"No directories found");
         const foundDir = recursiveFindDir(dirs,path);
         if (foundDir !== -1) {
             try
             {
                 fs.unlinkSync(path.join("./",foundDir.path));
                 deleteCVHelper(foundDir,req);
-                var command = {entryparams:{fieldName:"directories",operation:"delete_directory"},command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
+                var command = {entryparams:{fieldName:"directories",operation:"delete_directory"}
+                    ,command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
                 roomUpdates(req,path,command);
                 console.log(`Directory ${foundDir.path} deleted successfully.`);
                 return true;
