@@ -588,8 +588,8 @@ function deleteCVHelper(foundDir,req)
     }
 }
 // Delete a directory
-router.delete('/:room/:path', authenticateToken, (req, res) => {
-    const { room,path } = req.params;
+router.delete('/:path', authenticateToken, (req, res) => {
+    const { path } = req.params;
     const directories =  mapDirectory("./","principal","",req);
     const removeDirectory = (dirs) => {
         const foundDir = recursiveFindDir(dirs,path);
@@ -598,7 +598,8 @@ router.delete('/:room/:path', authenticateToken, (req, res) => {
             {
                 fs.unlinkSync(path.join("./",foundDir.path));
                 deleteCVHelper(foundDir,req);
-                roomUpdates(req,room,"getdirUpdates");
+                var command = {entryparams:{fieldName:"directories",operation:"delete_directory"},command:{path:uploadPath,name:name,isDirectory:true,parentPath:parent.path}};
+                roomUpdates(req,path,command);
                 return true;
             }catch(err)
             {
