@@ -606,6 +606,7 @@ router.delete('/', authenticateToken, (req, res) => {
                 deleteCVHelper(foundDir,req);
                 var command = {entryparams:{fieldName:"directories",operation:"delete_directory"},command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
                 roomUpdates(req,path,command);
+                console.log(`Directory ${foundDir.path} deleted successfully.`);
                 return true;
             }catch(err)
             {
