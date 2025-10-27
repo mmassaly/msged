@@ -606,7 +606,7 @@ router.delete('/', authenticateToken, (req, res) => {
             console.log("Attempting to delete directory: ", foundDir.path);
             try
             {
-                fs.unlinkSync(pathObj.join("./",foundDir.path));
+                fs.unlinkSync(pathObj.join("./",encodeURIComponent(foundDir.path)));
                 deleteCVHelper(foundDir,req);
                 var command = {entryparams:{fieldName:"directories",operation:"delete_directory"}
                     ,command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
