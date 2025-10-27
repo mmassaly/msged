@@ -588,7 +588,7 @@ function deleteCVHelper(foundDir,req)
     }
 }
 // Delete a directory
-router.delete('/:path(*)', authenticateToken, (req, res) => {
+router.delete('path/:path(*)', authenticateToken, (req, res) => {
     const { path } = req.params;
     const directories =  mapDirectory("./","principal","",req);
     const removeDirectory = (dirs) => {
