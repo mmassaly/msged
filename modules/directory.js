@@ -37,7 +37,7 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
       subdirectories: []
     };
-  
+    
     if (mappedDirectory.isDirectory)
     {
       const items = fs.readdirSync(dirrectory);
@@ -50,6 +50,15 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
         if(mappedDirectory.isArchived)
         {
             setKeyValueofSubdirectories(mappedDirectory,"isArchived",true);
+        }
+        if(parentPath =="principal")
+        {
+            var name = path.basename(folderPath);
+            if(req.app.locals.departements.findIndex(value=> value == name) < 0)
+            {
+                req.app.locals.departements.push(name);
+                fs.writeFileSync('./modules/Data/departements.json',JSON.stringify(req.app.locals.departements));
+            }
         }
     }
 
@@ -469,10 +478,19 @@ router.post('/', authenticateToken, (req, res) => {
             //RecursiveSplitTest2(uploadPath,req.app.locals.roomDic);
         }
       
-        try{
-        fs.mkdirSync(uploadPath, { recursive: true });
-        var command = {entryparams:{fieldName:"directories",operation:"add_directory"},command:{path:uploadPath,name:name,isDirectory:true,parentPath:parent.path}};
-        roomUpdates(req,uploadPath,command);
+        try
+        {
+            fs.mkdirSync(uploadPath, { recursive: true });
+            var command = {entryparams:{fieldName:"directories",operation:"add_directory"},command:{path:uploadPath,name:name,isDirectory:true,parentPath:parent.path}};
+            roomUpdates(req,uploadPath,command);
+            if(parent.path =="principal")
+            {
+                if(req.app.locals.departements.findIndex(value=> value == name) < 0)
+                {
+                    req.app.locals.departements.push(name);
+                    fs.writeFileSync('./modules/Data/departements.json',JSON.stringify(req.app.locals.departements));
+                }
+            }
         }catch(err)
         {
             res.status(500).json({message:err});
@@ -486,8 +504,17 @@ router.post('/', authenticateToken, (req, res) => {
             req.app.locals.roomDic[uploadPath].push("principal");
         try{
         fs.mkdirSync(uploadPath, { recursive: true });
-        var command = {entryparams:{fieldName:"directories",operation:"add_directory"},command:{path:uploadPath,name:name,isDirectory:true,parentPath:parent.path}};
-        roomUpdates(req,uploadPath,command);}catch(err)
+            var command = {entryparams:{fieldName:"directories",operation:"add_directory"}
+                ,command:{path:uploadPath,name:name,isDirectory:true,parentPath:parent.path}};
+                roomUpdates(req,uploadPath,command);
+            
+            if(req.app.locals.departements.findIndex(value=> value == name) < 0)
+            {
+                req.app.locals.departements.push(name);
+                fs.writeFileSync('./modules/Data/departements.json',JSON.stringify(req.app.locals.departements));
+            }
+            
+        }catch(err)
         {
             res.status(500).json({message:err});
         }
@@ -598,11 +625,12 @@ router.delete('/', authenticateToken, (req, res) => {
     parentPath = decodeURIComponent(parentPath);
     const directories =  mapDirectory("./",parentPath,"",req);
     console.log(directories? Object.entries(directories):"No directories found");
+    
     const removeDirectory = (dirs) => {
      
         const foundDir = recursiveFindDir(dirs,path);
         console.log("Found directory to delete: ", foundDir);
-        if (foundDir) {
+        if (foundDir && foundDir.path != "principal") {
             console.log("Attempting to delete directory: ", foundDir.path);
             try
             {
@@ -611,6 +639,11 @@ router.delete('/', authenticateToken, (req, res) => {
                 var command = {entryparams:{fieldName:"directories",operation:"delete_directory"}
                     ,command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
                 roomUpdates(req,path,command);
+                if(foundDir.parentPath == "principal" && req.app.locals.departements.findIndex(value=> value == foundDir.name) >= 0)
+                {
+                    req.app.locals.departements.splice(req.app.locals.departements.findIndex(value=> value == foundDir.name),1);
+                    fs.writeFileSync('./modules/Data/departements.json',JSON.stringify(req.app.locals.departements));
+                }
                 console.log(`Directory ${foundDir.path} deleted successfully.`);
                 return true;
             }catch(err)
@@ -618,11 +651,20 @@ router.delete('/', authenticateToken, (req, res) => {
                 console.error("Error deleting directory: ", err);
             }
         }
+        else if (foundDir.path == "principal")
+        {
+            return "denied"    
+        }
         return false;
     };
-
-    if (!removeDirectory(directories)) {
+    const success = removeDirectory(directories);
+    if ( !success ) 
+    {
         return res.status(400).json({ error: 'Directory not found' });
+    }
+    else if ( success == "denied" )
+    {
+        return res.status(403).json({ error: 'Cannot delete principal directory' });
     }
 
     res.json({ message: 'Directory deleted successfully!' });
