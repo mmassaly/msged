@@ -137,15 +137,15 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
 });
 
 // --- Détection des changements ---
-function getChangedProps(user, session, newUser) 
+function getChangedProps(user, newUser) 
 {
-   const updated = {
-    username: newUser.username ? newUser.username : user.username,
-    email: newUser.email ? newUser.email : user.email,
-    role: newUser.role ? newUser.role : user.role,
-    room: newUser.room ? newUser.room : session.room,
-    type: newUser.type ? newUser.type : session.type,
-    accountType: newUser.accountType ? newUser.accountType : user.accountType,
+  const updated = {
+    username: newUser.username?newUser.username:user.username,
+    email: newUser.email?newUser.email:user.email,
+    role: newUser.role?newUser.role:user.role ,
+    room: newUser.room?newUser.room:user.room ,
+    type: newUser.type?newUser.type:user.type,
+    accountType: newUser.accountType?newUser.accountType:user.accountType,
     password:
       newUser.password && newUser.password.trim().length > 0
         ? bcrypt.hashSync(newUser.password, 10)
@@ -156,8 +156,8 @@ function getChangedProps(user, session, newUser)
   if (updated.username !== user.username) changedProps.push({ field: "Nom d’utilisateur", old: user.username, new: updated.username });
   if (updated.email !== user.email) changedProps.push({ field: "Email", old: user.email, new: updated.email });
   if (updated.role !== user.role) changedProps.push({ field: "Rôle", old: user.role, new: updated.role });
-  if (updated.room !== session.room) changedProps.push({ field: "Salle", old: session.room, new: updated.room });
-  if (updated.type !== session.type) changedProps.push({ field: "Type", old: session.type, new: updated.type });
+  if (updated.room !== user.room) changedProps.push({ field: "Département", old: user.room, new: updated.room });
+  if (updated.type !== user.type) changedProps.push({ field: "Type", old: user.type, new: updated.type });
   if (updated.accountType !== user.accountType) changedProps.push({ field: "Type de compte", old: user.accountType, new: updated.accountType });
   if (updated.password !== user.password) changedProps.push({ field: "Mot de passe", old: user.password, new: updated.password });
 
