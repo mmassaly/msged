@@ -150,7 +150,7 @@ function getChangedProps(user, newUser)
     accountType: newUser.accountType?newUser.accountType:user.accountType,
     password:
       newUser.password?!bcrypt.compareSync(newUser.password, user.password)?newUser.password:user.password
-      :user.password;
+      :user.password
   };
 
   const changedProps = [];
