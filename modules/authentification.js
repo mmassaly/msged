@@ -123,7 +123,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   if(oldUser.email || newUser.email)
   {
     nodemailerCustom.notifyAccountChanges(!oldUser.email? newUser.email:oldUser.email,
-      getChangedProps(oldUser, session, newUser));
+      getChangedProps(oldUser, newUser));
   }
   
   console.log("Writting to file ");
