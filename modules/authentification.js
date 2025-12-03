@@ -163,6 +163,7 @@ function getChangedProps(user, newUser)
   if (updated.accountType !== user.accountType) changedProps.push({ field: "Type de compte", old: user.accountType, new: updated.accountType });
   if (updated.password !== user.password) changedProps.push({ field: "Mot de passe", old: user.password, new: newUser.password });
 
+  console.trace(newUser);
   return { updated, changedProps };
 }
 
