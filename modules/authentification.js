@@ -120,10 +120,10 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
 	return session;
     });
   
-  if(oldUser.email || user.email)
+  if(oldUser.email || newUser.email)
   {
-    nodemailerCustom.notifyAccountChanges(!oldUser.email? user.email:oldUser.email, user,
-           session, newUser, getChangedProps(user, session, newUser));
+    nodemailerCustom.notifyAccountChanges(!oldUser.email? newUser.email:oldUser.email,
+      getChangedProps(oldUser, session, newUser));
   }
   
   console.log("Writting to file ");

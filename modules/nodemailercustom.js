@@ -34,7 +34,7 @@ function createAccountChangeMailOptions(to,text,html,attachments,sujetdechangeme
 }
 
 // --- Notification des changements ---
-function notifyAccountChanges(to, user, session, newUser,obj) {
+function notifyAccountChanges(to,obj) {
 
  const  {changedProps} = obj;
   if (changedProps.length === 0) return; // rien n'a changé
