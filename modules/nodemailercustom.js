@@ -120,4 +120,4 @@ console.log(htmlEmail);
 
 //sendMailOptions(createMailOptions(undefined,"mamadumassaly@gmail.com","Bienvenue",undefined,htmlEmail,undefined));
 
-
+module.exports = {notifyAccountChanges,sendNewAccountMailOptions};
