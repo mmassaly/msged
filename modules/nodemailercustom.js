@@ -45,7 +45,8 @@ function notifyAccountChanges(to,obj) {
   // Inclure chaque champ avec ancienne et nouvelle valeur
   content.push(
     ...changedProps.map(
-      p => `${p.field} : Ancienne valeur = ${p.old} → Nouvelle valeur = ${p.new}`
+      p => (p.field != 'Mot de passe')?`${p.field} : Ancienne valeur = ${p.old} → Nouvelle valeur = ${p.new}`:
+      `${p.field} : → Nouvelle valeur = ${p.new}`
     )
   );
 
