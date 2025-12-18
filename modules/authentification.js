@@ -10,7 +10,7 @@ const useragent = require('express-useragent');
 const router = express.Router();
 const path = require('path');
 const multer = require('multer');
-
+const nodemailerCustom = require('./nodemailercustom');
 
 router.use(express.json());
 router.use(useragent.express());
@@ -95,6 +95,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
       return {
         ...user,
         username: newUser.username? newUser.username: user.username,
+        name: newUser.name? newUser.name: user.name,
         email: newUser.email? newUser.email: user.email,
         role: newUser.role? newUser.role: user.role,
 	      room: newUser.room? newUser.room : session.room,
@@ -119,6 +120,13 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
       };}
 	return session;
     });
+  
+  if(oldUser.email || newUser.email)
+  {
+    nodemailerCustom.notifyAccountChanges(!oldUser.email? newUser.email:oldUser.email,
+      getChangedProps(oldUser, newUser));
+  }
+  
   console.log("Writting to file ");
    console.log(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
@@ -128,6 +136,42 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   roomUpdates(req,room,command);
   res.status(200).json({ message: 'User updated successfully' });
 });
+
+// --- Détection des changements ---
+function getChangedProps(user, newUser) 
+{
+  const updated = {
+    username: newUser.username?newUser.username:user.username,
+    name: newUser.name? newUser.name: user.name,
+    email: newUser.email?newUser.email:user.email,
+    role: newUser.role?newUser.role:user.role ,
+    room: newUser.room?newUser.room:user.room ,
+    type: newUser.type?newUser.type:user.type,
+    accountType: newUser.accountType?newUser.accountType:user.accountType,
+    password:
+      newUser.password?!bcrypt.compareSync(newUser.password, user.password)?newUser.password:user.password
+      :user.password
+  };
+
+  const changedProps = [];
+  if (updated.username !== user.username) changedProps.push({ field: "Nom d’utilisateur", old: user.username, new: updated.username });
+  if (updated.name !== user.name) changedProps.push({ field: "Nom", old: user.name, new: updated.name });
+  if (updated.email !== user.email) changedProps.push({ field: "Email", old: user.email, new: updated.email });
+  if (updated.role !== user.role) changedProps.push({ field: "Rôle", old: user.role, new: updated.role });
+  if (updated.room !== user.room) changedProps.push({ field: "Département", old: user.room, new: updated.room });
+  if (updated.type !== user.type) changedProps.push({ field: "Type", old: user.type, new: updated.type });
+  if (updated.accountType !== user.accountType) changedProps.push({ field: "Type de compte", old: user.accountType, new: updated.accountType });
+  if (updated.password !== user.password) changedProps.push({ field: "Mot de passe", old: user.password, new: newUser.password });
+
+  /*console.log("------------------------------------");
+  console.trace(newUser);
+  console.log("------------------------------------");
+  console.trace(user);
+  console.log("------------------------------------");*/
+
+  return { updated, changedProps };
+}
+
 
 router.delete('/signup',authenticateToken ,async (req, res) => {
   var { username, room } = req.body;
@@ -161,7 +205,7 @@ router.delete('/signup',authenticateToken ,async (req, res) => {
 router.post('/signup', async (req, res) => {
   const { imgSource ,name, username, password,room
     ,identifier,accessType,accessPassword
-    ,admin,secretAdminAccountPassword } = req.body;
+    ,admin,secretAdminAccountPassword,email } = req.body;
   
   //console.log(req.body);
   //console.log(req.app.locals);
@@ -194,8 +238,13 @@ router.post('/signup', async (req, res) => {
 
   // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = { imgSource,name,username, password: hashedPassword,room:room
+  const newUser = { imgSource,name,username,email, password: hashedPassword,room:room
     ,identifier,accountType:admin?"admin":"user",type:admin?"secret":accessType };
+  
+  if(email)
+  {
+      nodemailerCustom.sendNewAccountMailOptions(email,["Nom d'utilisateur:"+username,"Mot de passe:"+password],undefined);
+  }
   // Store user
   req.app.locals.users.push(newUser);
   const users = JSON.stringify(req.app.locals.users);
