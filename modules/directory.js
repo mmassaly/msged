@@ -20,8 +20,10 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
         fs.mkdirSync(dirrectory);
     }
     const stats = fs.statSync(dirrectory);
-    if(folderPath.endsWith("Appel d'offre Janvier-Juin 2024")){console.log("Folder path is Appel d'offre Janvier-Juin 2024 "+path.join(parentPath,folderPath));
-      console.log(req.app.locals.secretFolders);
+    if(folderPath.endsWith("Appel d'offre Janvier-Juin 2024"))
+    {
+        console.log("Folder path is Appel d'offre Janvier-Juin 2024 "+path.join(parentPath,folderPath));
+        console.log(req.app.locals.secretFolders);
     }
     const mappedDirectory = {
       name: path.basename(folderPath),
@@ -356,8 +358,8 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
         var commandSub =  command.command;
         var directories =  mapDirectory("./",newPath,"",req);
-        Object.assign(directories,commandSub);
-        command.command = directories;
+        //Object.assign(directories,commandSub);
+        //command.command = directories;
         res.json({message:"Dossier renomé avec success!"});
     }catch(err)
     {
