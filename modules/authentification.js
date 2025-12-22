@@ -90,6 +90,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   if(!req.app.locals.users.find(user => user.username === oldUser.username)) {
     return res.status(404).json({ message: 'User not found' });
   }
+  
   req.app.locals.users = req.app.locals.users.map(user => {
     if (user.username === oldUser.username) {
       return {
@@ -106,7 +107,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
 	bcrypt.hashSync(newUser.password, 10) : user.password
       };
     }
-    console.log(newUser);
+   
     return user;
   });
   req.app.locals.sessions = req.app.locals.sessions.map(session => {
@@ -141,6 +142,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
 // --- Détection des changements ---
 function getChangedProps(user, newUser) 
 {
+  console.trace(user,newUser);
   const updated = {
     username: newUser.username?newUser.username:user.username,
     name: newUser.name? newUser.name: user.name,
