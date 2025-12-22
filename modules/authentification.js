@@ -106,6 +106,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
 	bcrypt.hashSync(newUser.password, 10) : user.password
       };
     }
+    console.log(newUser);
     return user;
   });
   req.app.locals.sessions = req.app.locals.sessions.map(session => {
