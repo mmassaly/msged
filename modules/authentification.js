@@ -152,7 +152,7 @@ function getChangedProps(user, newUser)
     type: newUser.type?newUser.type:user.type,
     accountType: newUser.accountType?newUser.accountType:user.accountType,
     password:
-      newUser.password?!bcrypt.compareSync(newUser.password, user.password)?newUser.password:user.password
+      newUser.password && newUser.password?!bcrypt.compareSync(newUser.password, user.password)?newUser.password:user.password
       :user.password
   };
 
@@ -164,7 +164,7 @@ function getChangedProps(user, newUser)
   if (updated.room !== user.room) changedProps.push({ field: "Département", old: user.room, new: updated.room });
   if (updated.type !== user.type) changedProps.push({ field: "Type", old: user.type, new: updated.type });
   if (updated.accountType !== user.accountType) changedProps.push({ field: "Type de compte", old: user.accountType, new: updated.accountType });
-  if (updated.password !== user.password) changedProps.push({ field: "Mot de passe", old: user.password, new: newUser.password });
+  if (updated.password !== user.password && user.password) changedProps.push({ field: "Mot de passe", old: user.password, new: newUser.password });
 
   /*console.log("------------------------------------");
   console.trace(newUser);
