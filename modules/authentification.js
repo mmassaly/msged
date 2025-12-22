@@ -152,7 +152,7 @@ function getChangedProps(user, newUser)
     type: newUser.type?newUser.type:user.type,
     accountType: newUser.accountType?newUser.accountType:user.accountType,
     password:
-      newUser.password && newUser.password?!bcrypt.compareSync(newUser.password, user.password)?newUser.password:user.password
+      newUser.password && user.password?!bcrypt.compareSync(newUser.password, user.password)?newUser.password:user.password
       :user.password
   };
 
