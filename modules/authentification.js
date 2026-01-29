@@ -304,7 +304,7 @@ const generateQRCode =   async (req, res) => {
   {
     return res.status(400).send("<label className='bi-exclamation-diamond'>Impossible de retourner le QR PWD</label>");  
   }
-  if(user.secret)
+  if(false && user.secret)
   {
     totp.generateQRCode(user.secret).then(html => res.status(200).send(html))
     .catch(err => res.status(200).send(err));
@@ -314,17 +314,17 @@ const generateQRCode =   async (req, res) => {
       try{
         const secret = totp.generateSecret(user.username);
         user.secret = secret.base32;
-        fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+        //fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
         totp.generateQRCode(secret).then(html => { console.log("valid html returns",html);return res.status(200).send(html)})
         .catch(err => {console.log("invalid html returns",err);return res.status(200).send(err);});
-        const oldUser = req.app.locals.users.find(user => user.username == user.username);
+        /*const oldUser = req.app.locals.users.find(user => user.username == user.username);
         const newUser = {...oldUser, secret: secret.base32};
         
         var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
         command:{oldUser, newUser}};
         try{
           roomUpdates(req,room,command);
-        }catch(err){console.log(err);}
+        }catch(err){console.log(err);}*/
       }
       catch( err){
         res.status(500).send("<label><i className=\"bi-exclamation-diamond\"></i>Erreur lors de la génération du secret TOTP</label>");
