@@ -304,13 +304,16 @@ const generateQRCode =   async (req, res) => {
   {
     return res.status(400).send("<label className='bi-exclamation-diamond'>Impossible de retourner le QR PWD</label>");  
   }
+  console.log("user found for QR generation");
   if(false && user.secret)
   {
+    console.log("Generating QR for existing secret"); 
     totp.generateQRCode(user.secret).then(html => res.status(200).send(html))
     .catch(err => res.status(200).send(err));
   }
   else
   {
+    console.log("Generating QR for new secret");
       try{
         const secret = totp.generateSecret(user.username);
         user.secret = secret.base32;
