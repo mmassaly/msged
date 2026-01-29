@@ -315,8 +315,8 @@ const generateQRCode =   async (req, res) => {
         const secret = totp.generateSecret(user.username);
         user.secret = secret.base32;
         fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
-        totp.generateQRCode(secret).then(html => { console.log(html);return res.status(200).send(html)})
-        .catch(err => {console.log(err);return res.status(200).send(err);});
+        totp.generateQRCode(secret).then(html => { console.log("valid html returns",html);return res.status(200).send(html)})
+        .catch(err => {console.log("invalid html returns",err);return res.status(200).send(err);});
         const oldUser = req.app.locals.users.find(user => user.username == user.username);
         const newUser = {...oldUser, secret: secret.base32};
         
