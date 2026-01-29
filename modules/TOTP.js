@@ -8,7 +8,7 @@ class TOTP
     }
     static verifyToken(secret, token) {
         return speakeasy.totp.verify({
-            secret: secret,
+            secret: secret.base32,
             encoding: 'base32',
             token: token,
             window: 1 // Allow a window of 1 time step before and after
