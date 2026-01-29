@@ -11,6 +11,7 @@ const router = express.Router();
 const path = require('path');
 const multer = require('multer');
 const nodemailerCustom = require('./nodemailercustom');
+const totp = require('./TOTP')
 
 router.use(express.json());
 router.use(useragent.express());
@@ -43,7 +44,7 @@ const upload = multer({ storage ,limits: {
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     //console.log(req.headers);
-    const token = authHeader && authHeader.split(' ')[1];
+    const token =  authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
     if (token == undefined) return res.sendStatus(401);
     var yourSession = req.app.locals.sessions.filter(session => session.username == userName);
@@ -133,7 +134,7 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
    console.log(req.app.locals.users);
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
-   command:{oldUser, newUser}};
+  command:{oldUser, newUser}};
          
   roomUpdates(req,room,command);
   res.status(200).json({ message: 'User updated successfully' });
@@ -286,15 +287,76 @@ router.get('/logout', async (req, res) => {
     	res.status(404).json({message:"Utilisateur non retrouvé"});
   }
 });
-// Login route
-router.post('/login', async (req, res) => {
+const generateQRCode =   async (req, res) => {
+  const  {username,password}  = req.body;
+  // Find user
+  const user = req.app.locals.users.find(user => user.username === username);
+  res.setHeader('Content-Type', 'text/html');
+  if (!user) 
+  {
+    return res.status(400).send("<label><i className='bi-exclamation-diamond'></i>Impossible de retourner le QR UNAme</label>");
+  }
+
+  // Verify password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  
+  if (!isPasswordValid) 
+  {
+    return res.status(400).send("<label className='bi-exclamation-diamond'>Impossible de retourner le QR PWD</label>");  
+  }
+  if(user.secret)
+  {
+    totp.generateQRCode(user.secret).then(html => res.status(200).send(html))
+    .catch(err => res.status(200).send(err));
+  }
+  else
+  {
+      try{
+        const secret = totp.generateSecret(user.username);
+        user.secret = secret.base32;
+        fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+        totp.generateQRCode(secret).then(html => { return res.status(200).send(html)})
+        .catch(err => {return res.status(200).send(err);});
+        const oldUser = req.app.locals.users.find(user => user.username == user.username);
+        const newUser = {...oldUser, secret: secret.base32};
+        
+        var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
+        command:{oldUser, newUser}};
+        try{
+          roomUpdates(req,room,command);
+        }catch(err){console.log(err);}
+      }
+      catch( err){
+        res.status(500).send("<label><i className=\"bi-exclamation-diamond\"></i>Erreur lors de la génération du secret TOTP</label>");
+      }
+    }
+};
+router.post('/loginQRStepOne', (req, res,next) => {
+  const { username } = req.body;
+  const user = req.app.locals.users.find(user => user.username === username);
+  // Find user
+  if( !user) {
+    return res.status(400).json({ message: 'Invalid username' });
+  }
+  next();
+},generateQRCode);
+
+
+const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
+ 
+  /*if(!req.url.indexOf("loginQRStepTwo") >= 0 &&( !previousToken
+   || req.app.locals.sessions.findIndex( session => session.previousToken == previousToken )))
+  {
+    return res.status(400).json({ message: 'Not enough credentials to continue' });
+  }*/
+
   // Find user
   const user = req.app.locals.users.find(user => user.username === username);
   if (!user) {
     return res.status(400).json({ message: 'Invalid username' });
   }
-
+  
   // Verify password
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
@@ -358,7 +420,29 @@ router.post('/login', async (req, res) => {
     console.log(req.app.locals.sessions);
   console.log("**********AFTER**************");*/
   res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType,imgSource:user.imgSource,name:user.name,identifier: user.identifier,email:user.email});
-});
+};
+
+router.post('/loginQRStepTwo', async (req, res, next) => {
+  const { username,token:TOTPtoken} = req.body;
+  // Find user
+  const user = req.app.locals.users.find(user => user.username === username);
+  if (!user) {
+    return res.status(400).json({ message: 'Invalid username' });
+  }
+
+  totp.verifyToken(user.secret, TOTPtoken).then( isVerified => {
+    if(!isVerified)
+    {
+      return res.status(400).json({ message: 'Invalid TOTP token' });
+    }
+    next();
+  }).catch( err => {
+    return res.status(500).json({ message: 'Error verifying TOTP token' }); 
+  });
+  
+},loginHandler);
+// Login route
+router.post('/login', loginHandler);
 
 // Protected route example
 router.get('/protected', (req, res) => {
@@ -376,6 +460,7 @@ router.get('/protected', (req, res) => {
   }
 });
 
+router.get('/generateQR', generateQRCode);
 router.get('/list',authenticateToken, (req, res) => {
   const username = req.headers['authorization']?.split(' ')[0];
   
