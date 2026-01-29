@@ -434,15 +434,12 @@ router.post('/loginQRStepTwo', async (req, res, next) => {
     return res.status(400).json({ message: 'Invalid username' });
   }
 
-  totp.verifyToken(user.secret, TOTPtoken).then( isVerified => {
-    if(!isVerified)
-    {
+ let isVerified =  totp.verifyToken(user.secret, TOTPtoken)
+ if(!isVerified)
+ {
       return res.status(400).json({ message: 'Invalid TOTP token' });
-    }
-    next();
-  }).catch( err => {
-    return res.status(500).json({ message: 'Error verifying TOTP token' }); 
-  });
+ }
+ next();
   
 },loginHandler);
 // Login route
