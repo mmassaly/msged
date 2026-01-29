@@ -333,6 +333,7 @@ const generateQRCode =   async (req, res) => {
 };
 router.post('/loginQRStepOne', (req, res,next) => {
   const { username } = req.body;
+  console.log(req.fullUrl)
   const user = req.app.locals.users.find(user => user.username === username);
   // Find user
   if( !user) {
