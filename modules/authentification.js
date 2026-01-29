@@ -427,7 +427,7 @@ const loginHandler = async (req, res) => {
 };
 
 router.post('/loginQRStepTwo', async (req, res, next) => {
-  const { username,token:TOTPtoken} = req.body;
+  const { username,TOTPtoken} = req.body;
   // Find user
   const user = req.app.locals.users.find(user => user.username === username);
   if (!user) {
