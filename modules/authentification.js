@@ -350,8 +350,12 @@ const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
  
   if(!req.originalUrl.indexOf("loginQRStepTwo") >= 0 && ( !previousToken
-   || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )))
+   || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )>= 0))
   {
+    console.log((!req.originalUrl.indexOf("loginQRStepTwo") >= 0)?"loginQRStepTwo not a part of "+req.originalUrl
+    :(!previousToken)?"Previous token missing"
+  :req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0?
+    "Previous token not found":"ras");
     return res.status(400).json({ message: 'Not enough credentials to continue' });
   }
 
