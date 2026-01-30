@@ -348,7 +348,7 @@ router.post('/loginQRStepOne', (req, res,next) => {
 
 const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
-  console.log(req.app.locals.sessions.map(session => JSON.stringify(session.toString())));
+  console.log(req.app.locals.sessions.map(session => JSON.stringify(session)));
   // Check for previous token unless it's loginQRStepTwo
   if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
    || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0))
@@ -387,19 +387,7 @@ const loginHandler = async (req, res) => {
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
   
-  if( req.app.locals.sessions.
-    find(session => (JSON.stringify(session.useragent) == JSON.stringify(req.useragent)
-     && (session.currentToken == newSession.currentToken || session.currentToken == newSession.oldToken)
-     && session.username == newSession.username 
-     && session.password == newSession.password 
-     && session.room == newSession.room
-     && session.hasFinished) ) == undefined ) 
-  { 
-    const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
-      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
-    req.app.locals.sessions.push(newSession);
-    req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
-  }
+  
 
   if(previousToken)
   {
@@ -419,12 +407,32 @@ const loginHandler = async (req, res) => {
       }
     }
     
+   
     console.log('previous login token index is '+index);
     
     //console.log(previousToken);
     ///console.log(req.app.locals.sessions);
   }
   
+   const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
+   newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
+   req.app.locals.sessions.push(newSession);
+   req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
+    
+    /*if( req.app.locals.sessions.
+    find(session => (JSON.stringify(session.useragent) == JSON.stringify(req.useragent)
+     && (session.currentToken == newSession.currentToken || session.currentToken == newSession.oldToken)
+     && session.username == newSession.username 
+     && session.password == newSession.password 
+     && session.room == newSession.room
+     && session.hasFinished) ) == undefined ) 
+  { 
+    const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
+      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
+    req.app.locals.sessions.push(newSession);
+    req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
+  }*/
+
   /*console.log("************AFTER************");
     console.log(req.app.locals.sessions);
   console.log("**********AFTER**************");*/
