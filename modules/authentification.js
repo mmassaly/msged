@@ -349,11 +349,11 @@ router.post('/loginQRStepOne', (req, res,next) => {
 const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
  
-  /*if(!req.url.indexOf("loginQRStepTwo") >= 0 &&( !previousToken
-   || req.app.locals.sessions.findIndex( session => session.previousToken == previousToken )))
+  if(!req.fullUrl.indexOf("loginQRStepTwo") >= 0 && ( !previousToken
+   || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )))
   {
     return res.status(400).json({ message: 'Not enough credentials to continue' });
-  }*/
+  }
 
   // Find user
   const user = req.app.locals.users.find(user => user.username === username);
