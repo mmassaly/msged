@@ -413,7 +413,7 @@ const loginHandler = async (req, res) => {
     //console.log(previousToken);
     ///console.log(req.app.locals.sessions);
   }
-  
+
    const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
    newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
    req.app.locals.sessions.push(newSession);
@@ -433,9 +433,9 @@ const loginHandler = async (req, res) => {
     req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
   }*/
 
-  /*console.log("************AFTER************");
-    console.log(req.app.locals.sessions);
-  console.log("**********AFTER**************");*/
+  console.log("************AFTER************");
+    console.log(req.app.locals.sessions.length);
+  console.log("**********AFTER**************");
   res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType,imgSource:user.imgSource,name:user.name,identifier: user.identifier,email:user.email});
 };
 
