@@ -349,6 +349,8 @@ router.post('/loginQRStepOne', (req, res,next) => {
 const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
   console.log(req.app.locals.sessions.map(session => JSON.stringify(session.toString())));
+  console.log("Previous token received: "+previousToken);
+  // Check for previous token unless it's loginQRStepTwo
   if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
    || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0))
   {
