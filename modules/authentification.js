@@ -349,15 +349,14 @@ router.post('/loginQRStepOne', (req, res,next) => {
 const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
   console.log(req.app.locals.sessions.map(session => JSON.stringify(session.toString())));
-  console.log("Previous token received: "+previousToken);
   // Check for previous token unless it's loginQRStepTwo
   if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
    || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0))
   {
-    console.log((req.originalUrl.indexOf("loginQRStepTwo") < 0)?"loginQRStepTwo not a part of "+req.originalUrl:"");
-    console.log((!previousToken)?"Previous token missing"
-  :req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0?
-    "Previous token not found":"no issue with previous token");
+    //console.log((req.originalUrl.indexOf("loginQRStepTwo") < 0)?"loginQRStepTwo not a part of "+req.originalUrl:"");
+    //console.log((!previousToken)?"Previous token missing"
+  //:req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0?
+    //"Previous token not found":"no issue with previous token");
     return res.status(400).json({ message: 'Not enough credentials to continue' });
   }
 
