@@ -377,7 +377,7 @@ const loginHandler = async (req, res) => {
     return;
   }*/
   // Generate JWT
-  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
+  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '2m' });
   const newSession = {date:new Date(Date.now()), username:username, password:password,
     currentToken : token, oldToken: previousToken,
     type: user.type?user.type:user.accountType == "admin"?"secret":"basic",
@@ -395,7 +395,7 @@ const loginHandler = async (req, res) => {
      && session.hasFinished) ) == undefined ) 
   { 
     const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
-      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
+      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
     req.app.locals.sessions.push(newSession);
     req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
   }
