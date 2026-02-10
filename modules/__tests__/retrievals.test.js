@@ -70,4 +70,18 @@ describe('testing /occupations',()=>{
             - expect.arrayContaining([...]) → partial match
          */
     });
+
+    it("must return the array free from the omitted value",async()=>{
+        app.locals.occupations.push("Musician");
+        expect(app.locals.occupations).toContain("Musician");
+         jwt.verify.mockImplementation((token, secret, callback) => {
+            callback(null, session); // simulate successful verification
+        });
+        const res = await request(app).delete('/occupations')
+        .set('authorization', "testuser mockedToken")
+        .set('test', "true")
+        .send({occupation:"Musician"});
+        expect(res.status).toBe(200);
+        expect(app.locals.occupations).not.toContain("Musician");
+    })
 });
