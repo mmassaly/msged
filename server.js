@@ -27,6 +27,8 @@ if(usersStr !== undefined)
 {
     app.locals.users = JSON.parse(usersStr);
 }
+else
+    app.locals.users = [];
 
 const roomDicStr = directoryRoutes.readFile("./modules/Data/roomDic.json");
 if(roomDicStr !== undefined)
@@ -45,7 +47,8 @@ if(departementsStr !== undefined)
     app.locals.departements = JSON.parse(departementsStr);
     console.log(app.locals.departements);
 }
-
+else
+    app.locals.departements = [];
 const secretFoldersStr = directoryRoutes.readFile('./modules/Data/secretFolders.json')
 if(secretFoldersStr !== undefined)
 {
@@ -79,6 +82,14 @@ if(cvsStr !== undefined)
 }
 else
     app.locals.cvs = {};
+
+const occupationsStr = directoryRoutes.readFile("./modules/Data/occupations.json");
+if(occupationsStr !== undefined)
+{
+    app.locals.occupations = JSON.parse(occupationsStr);
+}
+else
+    app.locals.occupations =[];
 
 app.use(cors({
     origin: "*",
