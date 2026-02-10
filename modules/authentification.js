@@ -410,7 +410,7 @@ const loginHandler = async (req, res) => {
       console.log("session deleted");
 
       var index2  = req.app.locals.intervals.findIndex(obj=> obj.session == objFound);
-      if(index2>=0)
+      if(index2 >=0 )
       {
         clearTimeout(req.app.locals.intervals[index2].timeoutValue);
         req.app.locals.intervals.splice(index2,1);

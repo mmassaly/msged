@@ -1,5 +1,12 @@
 const path = require('path');
 
+function allRoomUpdated(req,command)
+{
+    req.app.locals.sessions.forEach(session => 
+    {
+        session.commands.push(command);
+    });
+}
 function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=undefined)
 {
     //console.log(req.app.locals.roomDic);
@@ -76,4 +83,4 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
      console.log("Looking for a session for additionalCommand***************");
 }
 
-module.exports = roomUpdates;
+module.exports = {roomUpdates,allRoomUpdated};

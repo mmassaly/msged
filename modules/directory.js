@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const roomUpdates = require('./roomUtil');
+const {roomUpdates} = require('./roomUtil');
 const path = require('path');
 const pathObj = require('path');
 const router = express.Router();
