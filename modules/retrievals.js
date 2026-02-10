@@ -62,7 +62,7 @@ router.post("/occupations",authenticateToken,async(req,res)=>{
     req.app.locals.occupations.push(last);
     if(req.headers["test"] != 'true')
     {
-        fs.writeFile("./modules/Data/occupations.json",JSON.stringify(req.app.locals.occupations));//fs was not present
+        fs.writeFileSync("./modules/Data/occupations.json",JSON.stringify(req.app.locals.occupations));//fs was not present
     }
     
     var command ={entryparams:{fieldName:"occupations",operation:"add_occupation"},
