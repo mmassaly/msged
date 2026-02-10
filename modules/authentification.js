@@ -348,14 +348,15 @@ router.post('/loginQRStepOne', (req, res,next) => {
 
 const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
- 
+  console.log(req.app.locals.sessions.map(session => JSON.stringify(session)));
+  // Check for previous token unless it's loginQRStepTwo
   if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
    || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0))
   {
-    console.log((req.originalUrl.indexOf("loginQRStepTwo") < 0)?"loginQRStepTwo not a part of "+req.originalUrl:"");
-    console.log((!previousToken)?"Previous token missing"
-  :req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0?
-    "Previous token not found":"no issue with previous token");
+    //console.log((req.originalUrl.indexOf("loginQRStepTwo") < 0)?"loginQRStepTwo not a part of "+req.originalUrl:"");
+    //console.log((!previousToken)?"Previous token missing"
+  //:req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0?
+    //"Previous token not found":"no issue with previous token");
     return res.status(400).json({ message: 'Not enough credentials to continue' });
   }
 
@@ -377,7 +378,7 @@ const loginHandler = async (req, res) => {
     return;
   }*/
   // Generate JWT
-  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
+  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '2m' });
   const newSession = {date:new Date(Date.now()), username:username, password:password,
     currentToken : token, oldToken: previousToken,
     type: user.type?user.type:user.accountType == "admin"?"secret":"basic",
@@ -386,19 +387,7 @@ const loginHandler = async (req, res) => {
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
   
-  if( req.app.locals.sessions.
-    find(session => (JSON.stringify(session.useragent) == JSON.stringify(req.useragent)
-     && (session.currentToken == newSession.currentToken || session.currentToken == newSession.oldToken)
-     && session.username == newSession.username 
-     && session.password == newSession.password 
-     && session.room == newSession.room
-     && session.hasFinished) ) == undefined ) 
-  { 
-    const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
-      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},600000);
-    req.app.locals.sessions.push(newSession);
-    req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
-  }
+  
 
   if(previousToken)
   {
@@ -418,15 +407,35 @@ const loginHandler = async (req, res) => {
       }
     }
     
+   
     console.log('previous login token index is '+index);
     
     //console.log(previousToken);
     ///console.log(req.app.locals.sessions);
   }
-  
-  /*console.log("************AFTER************");
-    console.log(req.app.locals.sessions);
-  console.log("**********AFTER**************");*/
+
+   const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
+   newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
+   req.app.locals.sessions.push(newSession);
+   req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
+    
+    /*if( req.app.locals.sessions.
+    find(session => (JSON.stringify(session.useragent) == JSON.stringify(req.useragent)
+     && (session.currentToken == newSession.currentToken || session.currentToken == newSession.oldToken)
+     && session.username == newSession.username 
+     && session.password == newSession.password 
+     && session.room == newSession.room
+     && session.hasFinished) ) == undefined ) 
+  { 
+    const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
+      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
+    req.app.locals.sessions.push(newSession);
+    req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
+  }*/
+
+  console.log("************AFTER************");
+    console.log(req.app.locals.sessions.length);
+  console.log("**********AFTER**************");
   res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType,imgSource:user.imgSource,name:user.name,identifier: user.identifier,email:user.email});
 };
 
