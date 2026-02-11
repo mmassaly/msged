@@ -60,7 +60,7 @@ router.delete("/occupations",authenticateToken,async(req,res)=>{
         let index = req.app.locals.occupations.indexOf(occupation);
         if(index >= 0)
         {
-            req.app.locals.occupations.splice(1,index);       
+            req.app.locals.occupations.splice(index,1);       
             if(req.headers["test"] != 'true')
             {
                 fs.writeFileSync("./modules/Data/occupations.json",
