@@ -57,15 +57,19 @@ router.delete("/occupations",authenticateToken,async(req,res)=>{
     const {occupation} = req.body;
     if(req.app.locals.occupations.includes(occupation))
     {
-        req.app.locals.occupations.splice(1,req.app.locals.occupations.indexOf(occupation));       
-        if(req.headers["test"] != 'true')
+        let index = req.app.locals.occupations.indexOf(occupation);
+        if(index >= 0)
         {
-            fs.writeFileSync("./modules/Data/occupations.json",
-                JSON.stringify(req.app.locals.occupations));//fs was not present
+            req.app.locals.occupations.splice(1,index);       
+            if(req.headers["test"] != 'true')
+            {
+                fs.writeFileSync("./modules/Data/occupations.json",
+                    JSON.stringify(req.app.locals.occupations));//fs was not present
+            }
+            var command ={entryparams:{fieldName:"occupations",operation:"remove_occupation"},
+                command:{occupation}};
+            allRoomUpdated(req,command);
         }
-        var command ={entryparams:{fieldName:"occupations",operation:"remove_occupation"},
-            command:{occupation}};
-        allRoomUpdated(req,command);
     }
     res.sendStatus(200);
 });
