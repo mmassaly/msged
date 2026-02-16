@@ -261,6 +261,9 @@ router.get('/officefile', (req, res) => {
    const filePath = path.join('./',req.query.path);
    const mimeType = mime.lookup(filePath);
    //res.setHeader({'Content-Type':mimeType}); //causes issues in clients view
+   console.log("------------------------------------get office file sending -------------------------------");
+   console.log(mimeType);
+   console.log("------------------------------------get office file sending -------------------------------");
    res.set('Content-Type',mimeType);
    console.log(filePath);
    /*
