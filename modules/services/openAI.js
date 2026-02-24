@@ -36,7 +36,50 @@ async function processPDF(filePath, functionTitleList =[null,"Architecte","Urban
 }).catch(error => {
   console.error("Error processing PDF:", error);
 });*/
+// run-ollama.js
+// runOllama.js
+const fetch = require("node-fetch"); // Node 18+ has global fetch, otherwise install node-fetch
 
+async function runOllama(texts, functionTitleList) {
+  // Build the system prompt
+  const systemPrompt = 
+    "You are a cv text content to object assistant." +
+    " You receive read text and extract Cirriculum vitae info" +
+    " and collect personal details, experience, degrees and skill then put these into an object" +
+    " for each new item in the category inside the cirriculum vitae and translate the content into french." +
+    " You should be ready to extract the content from the text and put it into the right category." +
+    " You should be ready to understand english and french but the end result is in french." +
+    " You will return the result as an object for each text with the following format:\n" +
+    "{ personalDetails: { prefix:'', functionTitle: /*must be in the list [" + functionTitleList.join(",") + "]*/'', functionTitleTyped:'', fullName:'', email:'', phone:'', address:'' }, experience:[{ name:'', newname:'', company:'', position:'', startDate:'', endDate:'', selectName:'', description:'', id:'', value:'' }], degrees:[{ name:'', newname:'', institution:'', degree:'', fieldOfStudy:'', selectName:'', description:'', startDate:'', endDate:'', id:'', value:'' }], competencies:[{ description:'', name:'', newname:'', value:'', id:'', selectName:'' }]}";
+
+  // Build messages array
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...texts.map(text => ({
+      role: "user",
+      content: `Give me the object representation of the curriculum vitae content in the following text:\n${text}`
+    }))
+  ];
+
+  // Call Ollama chat API
+  const response = await fetch("http://localhost:11434/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "llama2", // or another model you’ve pulled with `ollama pull`
+      messages,
+      stream: false // set to true if you want streaming chunks
+    })
+  });
+
+  const data = await response.json();
+
+  // Ollama returns { message: { role, content }, ... }
+  const content = data.message?.content || "";
+  console.log(content);
+
+  return { cvObject: JSON.parse(content) };
+}
 async function run(texts,functionTitleList ) {
   // Example: Chat completion
   const response = await client.chat.completions.create({
@@ -122,7 +165,11 @@ of the curriculum vitae content in the following text:\n${text}`
   return {cvObject:JSON.parse(response.choices[0].message.content)};
 }
 
-//run(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperience:\n- Company: ABC Corp\nPosition: Software Engineer\nDuration: Jan 2020 - Present\nSkills: JavaScript, Python, React"]);
+runOllama(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperience:\n- Company: ABC Corp\nPosition: Software Engineer\nDuration: Jan 2020 - Present\nSkills: JavaScript, Python, React"],[undefined,"Architecte","Urbaniste","Chargé de mission","Chef de projet","Gestionnaire administratif","Responsable des ressources humaines","Inspecteur des finances","Attaché territorial","Secrétaire administratif","Ingénieur territorial","Conseiller juridique","Contrôleur de gestion","Chargé de communication","Archiviste","Conservateur du patrimoine","Directeur d’établissement public","Agent d’accueil","Technicien supérieur","Responsable informatique/Ingénieur informatique","Chargé des marchés publics","Informaticien Développeur","Hydraulicien","Autre"])
+.then(response => {
+  console.log("Final Response from Ollama:", response);
+}).catch(error => {console.error("Error processing PDF:", error);});
+
 function cvCommands (cvObject)
 { const commands = [];
   Object.keys(cvObject).forEach(category=>{
@@ -152,5 +199,6 @@ function cvCommands (cvObject)
 module.exports = {
   run,
   processPDF,
-  extractTextFromPDF
+  extractTextFromPDF,
+  runOllama
 };
