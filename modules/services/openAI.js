@@ -66,7 +66,7 @@ async function runOllama(texts, functionTitleList) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "llama2", // or another model you’ve pulled with `ollama pull`
+      model: "llama3:latest", // or another model you’ve pulled with `ollama pull`
       messages,
       stream: false // set to true if you want streaming chunks
     })
