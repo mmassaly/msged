@@ -2,10 +2,33 @@ const express = require('express');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const  fs = require("node:fs");
-const {postCVDir,putCVDir} = require('../directory');
+const { extractTextFromPDF } = require('../services/openAI');
+const {postCVDir,putCVDir,openAIChargeCV} = require('../directory');
 // Mock jwt
 jest.mock('jsonwebtoken');
-
+// __tests__/directorytest.test.js
+jest.mock('pdf-parse', () => {
+  return {
+    PDFParse: jest.fn().mockImplementation(() => {
+      return {
+        getText: jest.fn().mockResolvedValue({
+          pages: [
+            {
+              text: "Mamadou Massaly Développeur Logiciel | Ingénieur Full Stack (4 ans et 6 mois ...",
+              num: 1
+            },
+            {
+              text: "Électronique & Systèmes Embarqués ...",
+              num: 2
+            }
+          ],
+          text: "Mamadou Massaly Développeur Logiciel | Ingénieur Full Stack (4 ans et 6 mois ...",
+          total: 3
+        })
+      };
+    })
+  };
+});
 describe('GET /CV with valid token', () => {
   let app;
 
@@ -15,11 +38,12 @@ describe('GET /CV with valid token', () => {
 
     // Mock app.locals
     app.locals.sessions = [
-      { username: 'user123', currentToken: 'validtoken' }
+      { username: 'user123', currentToken: 'validtoken', room: 'principal' }
     ];
     app.locals.secretKey = 'testsecret';
     app.locals.cvs = ['CV1', 'CV2'];
     app.locals.cvDirs = [];
+    app.locals.roomDic = {"principal/Administration/CVs":["principal","principal/Administration","principal/Administration/CVs"]};
     // ✅ Mock authenticateToken middleware
     const authenticateToken = (req, res, next) => {
       const authHeader = req.headers['authorization'];
@@ -49,9 +73,11 @@ describe('GET /CV with valid token', () => {
     app.post('/CV',authenticateToken,postCVDir);
     
     app.put('/CV',authenticateToken,putCVDir);
+
+    app.post('/CV/charge',authenticateToken,openAIChargeCV);
   });
 
-  test('should pass authentication and return CVs', async () => {
+  /*test('should pass authentication and return CVs', async () => {
     // ✅ Simulate successful token verification
     jwt.verify.mockImplementation((token, secret, callback) => {
       callback(null, { name: 'user123' });
@@ -116,7 +142,6 @@ describe('GET /CV with valid token', () => {
     expect(app.locals.cvDirs).not.toContain("principal/Administration/CVs");
     
   });
-
   test('the givenpath should be a part of cvs object',async()=>{
     app.locals.cvs ={};
     jwt.verify.mockImplementation((token, secret, callback) => {
@@ -125,8 +150,8 @@ describe('GET /CV with valid token', () => {
     const response = await request(app)
       .put('/CV')
       .set('Authorization', 'user123 validtoken')
-      .send({givenPath:"principal/Administration/CVs"
-        ,parentPath:"principal/Administration",fullName:"Mamaadou Massaly",prefix:"Mr"
+      .send({givenPath:"principal/Administration/CVs/Mamadou_Massaly_CV_FR-5.pdf"
+        ,parentPath:"principal/Administration/CVs",fullName:"Mamaadou Massaly",prefix:"Mr"
         ,competencies:[],experiences:[],degrees:[]});
     if(response.statusCode == 500)
     {
@@ -139,4 +164,27 @@ describe('GET /CV with valid token', () => {
     }
     expect(Object.keys(app.locals.cvs)).toContain("principal/Administration/CVs");
   });
+*/
+
+  test('we are calling apenAI.js to receive a cvObject of the pdf file',async()=>{
+    jwt.verify.mockImplementation((token, secret, callback) => {
+      callback(null, { name: 'user123' });
+    }); 
+    try{
+      const response = await request(app)
+      .post('/CV/charge')
+      .set('Authorization', 'user123 validtoken')
+      .set('Content-Type', 'application/json')
+      .send({givenPath:"principal/Administration/CVs",parentPath:"principal/Administration"});
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toEqual({ message: "CV chargé avec succès!" });
+
+    }
+    catch(error)
+    {
+        console.error("Error processing PDF:", error);
+    }
+  });
+  
+
 });

@@ -21,3 +21,10 @@ git reset --hard origin/<branch-name>
 -------------------------------------------------------------
 git config --global user.name "Your New Name"
 git config --global user.email "yournewemail@example.com"
+
+https://github.com/mmassaly/attendance-mobile-logging.git
+
+--------------------------------------------------------------
+if you are connected to basic repository
+git pull https://github.com/mmassaly/project-skeleton mmain 
+git pull https://github.com/mmassaly/project-skeleton mmain

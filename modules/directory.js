@@ -5,6 +5,7 @@ const path = require('path');
 const pathObj = require('path');
 const router = express.Router();
 const mime = require('mime-types');
+const openAIPackage= require('./services/openAI');
 router.use(express.json());
 // In-memory storage for demonstration purposes
 
@@ -63,7 +64,23 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
             }
         }
     }
-
+    /*else if(mappedDirectory.isCV)
+    {
+        //CV section get the reading then get the Object for description
+        openAIPackage.run(mapDirectory.path,req.app.locals.occupations).then(response=>{ 
+            response.cvObject;
+            response.cvUpdateCommands.parentPath = parentPath;
+            response.cvUpdateCommands.path = path.join(parentPath,folderPath);
+            putCVDir({parentPath:mappedDirectory.parentPath,
+            fullName:response.cvObject.personalDetails.fullName,
+            prefix:response.cvObject.personalDetails.prefix,
+            functionTitle:response.cvObject.personalDetails.functionTitle,
+            functionTitleTyped:response.cvObject.personalDetails.functionTitleTyped,
+            competencies:response.cvObject.competencies,
+            experiences:response.cvObject.experience,
+            degrees:response.cvObject.degrees},undefined);
+        }).catch(err=>{console.error(err)});
+    }*/
     return ((req.session && req.session.type == "secret" && mappedDirectory.isSecret) ||!mappedDirectory.isSecret )? mappedDirectory: undefined ;
   }
 function readSize(path)
@@ -168,8 +185,26 @@ const postCVDir = (req,res)=>{
         res.json({message:`${givenPath} est maintenant un dossier ordinaire`});
     }
 };
+const openAIChargeCV = (req,res)=>{
+    const {givenPath, parentPath} = req.body;
+    console.log(givenPath,parentPath);
+    openAIPackage.processPDF(givenPath,req.app.locals.occupations).then(response=>{
+        console.log(response);
+        return putCVDir({parentPath:parentPath,fullName:response.cvObject.personalDetails.fullName,
+            prefix:response.cvObject.personalDetails.prefix,
+            functionTitle:response.cvObject.personalDetails.functionTitle,
+            functionTitleTyped:response.cvObject.personalDetails.functionTitleTyped,
+            competencies:response.cvObject.competencies,
+            experiences:response.cvObject.experience,
+            degrees:response.cvObject.degrees},undefined);
+    }).then(value=> value).then(value=>{console.log("CV chargé avec succès");
+        res.status(200).json({message:"CV chargé avec succès!"});}).catch(err=>{console.error(err);
+        res.status(500).json( {message:`Il y a eu une erreur ${err.message}`});
+    });
+};
 const putCVDir = (req,res)=>{
-    const {givenPath,parentPath,fullName,prefix,functionTitle,functionTitleTyped,competencies,experiences,degrees} = req.body;
+    const {givenPath,parentPath,fullName,prefix,functionTitle,
+        functionTitleTyped,competencies,experiences,degrees} = req.body;
     
     var command = {entryparams:{fieldName:"CV",operation:"upload_cv"},
             command:{path:givenPath,name:path.basename(givenPath),
@@ -201,28 +236,46 @@ const putCVDir = (req,res)=>{
         cvInMemory.degrees = degrees;
         cvInMemory.experiences = experiences;
         
+        if(!res)
+        {
+            cvInMemory.chargedFromAI = true;
+            command.command.put.push({location:"chargedFromAI",value:true});
+        }
+        else
+        {
+            cvInMemory.chargedByUser = true;
+            command.command.put.push({location:"chargedByUser",value:true});
+        }
+
         if(!cvInMemory.changes)
             cvInMemory.changes = [];
         
         cvInMemory.changes.push(command);
         
-        try{
+        try
+        {
             fs.writeFileSync('./modules/Data/cvs.json',JSON.stringify(req.app.locals.cvs));
-            mapDirectory("./",parentPath,"",req);
+            if(res)
+            {
+                mapDirectory("./",parentPath,"",req);
+            }
             roomUpdates(req,parentPath,command);
         }catch(err)
         {
             //return response.status(500).type('text').text(err.message);
             console.error(err);
-            return res.status(500).json( {message:"Il y a eu une erreur ",message2:err.message});
+            if(res)
+                return res.status(500).json( {message:"Il y a eu une erreur ",message2:err.message});
         }
-        res.json({message:"Le CV rattâché à "+fullName+" a été rattaché au dossier "+givenPath+"."});
+        if(res)
+            res.json({message:"Le CV rattâché à "+fullName+" a été rattaché au dossier "+givenPath+"."});
         return;
     
 };
 
 router.post('/CV',authenticateToken,postCVDir);
 router.put('/CV',authenticateToken,putCVDir);
+router.post('/CV/charge',authenticateToken,openAIChargeCV);
 // Fetch directories
 router.get('/', authenticateToken, (req, res) => {
     //console.log(req.user);
@@ -704,4 +757,4 @@ const setKeyValueofSubdirectories = (dir,key,value)=>
 }
 module.exports = {router,recursiveFindDir,mapDirectory,writeFile
     ,readFile,RenameRoomsContainingOldPathWithNewPath,authenticateToken
-    ,postCVDir,putCVDir};
+    ,postCVDir,putCVDir,openAIChargeCV};

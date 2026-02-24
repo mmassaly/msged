@@ -21,6 +21,7 @@ async function extractTextFromPDF(filePath) {
 async function processPDF(filePath, functionTitleList =[null,"Architecte","Urbaniste","Chargé de mission","Chef de projet","Gestionnaire administratif","Responsable des ressources humaines","Inspecteur des finances","Attaché territorial","Secrétaire administratif","Ingénieur territorial","Conseiller juridique","Contrôleur de gestion","Chargé de communication","Archiviste","Conservateur du patrimoine","Directeur d’établissement public","Agent d’accueil","Technicien supérieur","Responsable informatique/Ingénieur informatique","Chargé des marchés publics","Informaticien Développeur","Hydraulicien","Autre"])
 {
   const textObject = await extractTextFromPDF(filePath);
+  console.log("Text Object:", textObject);  
   if (textObject) {
     let response = await run([textObject.pages.map(page => page.text).join("\n")],functionTitleList);
     return response;
@@ -30,11 +31,11 @@ async function processPDF(filePath, functionTitleList =[null,"Architecte","Urban
   return null;
 }
 
-processPDF('C:/Users/idris/Downloads/Mamadou_Massaly_CV_FR-5.pdf').then(response => {
+/*processPDF('../__tests__/principal/Administration/CVS/Mamadou_Massaly_CV_FR-5.pdf').then(response => {
   console.log("Final Response:", response);
 }).catch(error => {
   console.error("Error processing PDF:", error);
-});
+});*/
 
 async function run(texts,functionTitleList ) {
   // Example: Chat completion
@@ -118,11 +119,36 @@ of the curriculum vitae content in the following text:\n${text}`
   });
 
   console.log(response.choices[0].message.content);
-  return response.choices[0].message.content;
+  return {cvObject:JSON.parse(response.choices[0].message.content)};
 }
 
 //run(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperience:\n- Company: ABC Corp\nPosition: Software Engineer\nDuration: Jan 2020 - Present\nSkills: JavaScript, Python, React"]);
-
+function cvCommands (cvObject)
+{ const commands = [];
+  Object.keys(cvObject).forEach(category=>{
+    if(Array.isArray(cvObject[category]))
+    {
+      cvObject[category].forEach(item=>{
+        const command = {
+          action: 'add',
+          category: category,
+          item: item
+        };
+        commands.push(command);
+      });
+    }
+    else
+    {
+      const command = {
+        action: 'add',
+        category: category,
+        item: cvObject[category]
+      };
+      commands.push(command);
+    }
+  });
+  return {path:"cvUpdateCommands",commands:commands,parentPath,path};
+}
 module.exports = {
   run,
   processPDF,

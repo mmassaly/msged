@@ -24,3 +24,8 @@ scp -r /local/folder username@remote_host:/remote/folder
 - Add -P <port> if your SSH server uses a non-default port.
 
 **************************************************
+ssh -R [remote_port]:localhost:[local_port] user@remote_host
+• R	 → Reverse tunnel option.
+• remote_port	 → The port on the remote server that will be opened.
+• localhost:[local_port]	 → The local machine and port you want to expose.
+• user@remote_host	 → The SSH login to your remote server.

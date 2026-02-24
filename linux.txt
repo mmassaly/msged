@@ -76,3 +76,12 @@ These are pagers used to scroll through long text.
 - You can use ls directory_name first to inspect contents before deleting.
 
 Want help scripting safe deletions, or setting up a trash-like recovery system before removing things permanently? I’ve got some neat tricks for that too.
+
+-------------------------------------------------
+In nano Alt + 6 is select
+Copy is Ctrl + 6
+Cut is Ctrl + K
+Paste is Ctrl + U
+Undo is Shift + U
+Redu is Shift + R
+Comment is Alt + 3
