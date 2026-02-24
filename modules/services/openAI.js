@@ -78,7 +78,7 @@ async function runOllama(texts, functionTitleList) {
   const content = data.message?.content || "";
   console.log(content);
 
-  return { cvObject: JSON.parse(content) };
+  //return { cvObject: JSON.parse(content) };
 }
 async function run(texts,functionTitleList ) {
   // Example: Chat completion
@@ -169,7 +169,6 @@ runOllama(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperien
 .then(response => {
   console.log("Final Response from Ollama:", response);
 }).catch(error => {console.error("Error processing PDF:", error);});
-
 function cvCommands (cvObject)
 { const commands = [];
   Object.keys(cvObject).forEach(category=>{
