@@ -77,7 +77,7 @@ async function runOllama(texts, functionTitleList) {
   // Ollama returns { message: { role, content }, ... }
   const content = data.message?.content || "";
   console.log(content);
-
+    console.log(data);
   //return { cvObject: JSON.parse(content) };
 }
 async function run(texts,functionTitleList ) {
