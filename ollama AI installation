@@ -1,0 +1,79 @@
+linux 
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3
+sudo systemctl stop ollama
+sudo systemctl disable ollama
+sudo rm /usr/local/bin/ollama
+sudo rm -rf /var/lib/ollama
+sudo rm -rf /etc/systemd/system/ollama.service
+--------------------------remove ollama data and config----------------------------------------------
+rm -rf ~/.ollama
+sudo rm -rf /var/lib/ollama
+sudo rm -rf /etc/systemd/system/ollama.service
+Step 4: Verify Deletion
+Check that Ollama is gone:
+which ollama
+
+
+If nothing prints, the binary is removed.
+-----------------------------------------------------------------------------------------------------
+ Step 5: Reinstall Ollama
+Reinstall using the official script:
+curl -fsSL https://ollama.com/install.sh | sh
+
+
+
+🔹 Step 6: Install TinyLlama
+Once Ollama is reinstalled, pull the TinyLlama model:
+ollama pull tinyllama:1.1b
+
+
+This model is ~1.1 GB and designed for low‑RAM systems.
+
+🔹 Step 7: Run TinyLlama
+Test it:
+ollama run tinyllama:1.1b
+
+
+
+✅ Summary
+- Stop and remove Ollama service + binary.
+- Delete cached models (~/.ollama) and service files.
+- Reinstall Ollama with curl.
+- Pull TinyLlama (1.1B) — fits under 2 GB RAM.
+
+👉 Do you want me to also give you a Node.js example that automatically detects installed models (via /api/tags) and picks the smallest one (like TinyLlama or Qwen 0.5B) so you don’t have to hard‑code the model name?
+
+----------------------- I am dropping it sucks keeps bitching for llama3:latest  --------------------------
+GPT$ALL
+curl -s https://gpt4all.io/install.sh | bash
+-----------------------------------------------------------------------------------------------------------
+
+Perfect — Ollama is now reinstalled and running on your VPS (127.0.0.1:11434). The warning just means you don’t have a GPU, so Ollama will run in CPU‑only mode. That’s fine, it just makes inference slower, but it still works.
+
+🔹 Next Steps: Install TinyLlama
+Since you want a lightweight model under ~1 GB–2 GB RAM, pull TinyLlama:
+ollama pull tinyllama:1.1b
+
+
+This will download the ~1.1 GB quantized GGUF model.
+
+🔹 Verify Installation
+List installed models:
+ollama list
+
+
+or
+curl http://127.0.0.1:11434/api/tags
+
+
+You should see something like:
+{
+  "models": [
+    { "name": "tinyllama:1.1b", "size": 1100000000, "family": "llama" }
+  ]
+}
+
+
+
+

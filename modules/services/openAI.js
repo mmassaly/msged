@@ -41,18 +41,8 @@ async function processPDF(filePath, functionTitleList =[null,"Architecte","Urban
 const fetch = require("node-fetch"); // Node 18+ has global fetch, otherwise install node-fetch
 
 async function runOllama(texts, functionTitleList) {
-  // Build the system prompt
-  const systemPrompt = 
-    "You are a cv text content to object assistant." +
-    " You receive read text and extract Cirriculum vitae info" +
-    " and collect personal details, experience, degrees and skill then put these into an object" +
-    " for each new item in the category inside the cirriculum vitae and translate the content into french." +
-    " You should be ready to extract the content from the text and put it into the right category." +
-    " You should be ready to understand english and french but the end result is in french." +
-    " You will return the result as an object for each text with the following format:\n" +
-    "{ personalDetails: { prefix:'', functionTitle: /*must be in the list [" + functionTitleList.join(",") + "]*/'', functionTitleTyped:'', fullName:'', email:'', phone:'', address:'' }, experience:[{ name:'', newname:'', company:'', position:'', startDate:'', endDate:'', selectName:'', description:'', id:'', value:'' }], degrees:[{ name:'', newname:'', institution:'', degree:'', fieldOfStudy:'', selectName:'', description:'', startDate:'', endDate:'', id:'', value:'' }], competencies:[{ description:'', name:'', newname:'', value:'', id:'', selectName:'' }]}";
+  const systemPrompt = "You are a cv text content to object assistant..." // keep your long prompt
 
-  // Build messages array
   const messages = [
     { role: "system", content: systemPrompt },
     ...texts.map(text => ({
@@ -61,25 +51,27 @@ async function runOllama(texts, functionTitleList) {
     }))
   ];
 
-  // Call Ollama chat API
   const response = await fetch("http://localhost:11434/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "llama3:latest", // or another model you’ve pulled with `ollama pull`
+      model: "qwen:0.5b",   // ✅ must match installed model
       messages,
-      stream: false // set to true if you want streaming chunks
+      stream: false
     })
   });
 
   const data = await response.json();
-
-  // Ollama returns { message: { role, content }, ... }
   const content = data.message?.content || "";
-  console.log(content);
-    console.log(data);
-  //return { cvObject: JSON.parse(content) };
+  console.log("Ollama raw content:", content);
+
+  try {
+    return { cvObject: JSON.parse(content) };
+  } catch {
+    return { raw: content };
+  }
 }
+
 async function run(texts,functionTitleList ) {
   // Example: Chat completion
   const response = await client.chat.completions.create({
@@ -169,32 +161,7 @@ runOllama(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperien
 .then(response => {
   console.log("Final Response from Ollama:", response);
 }).catch(error => {console.error("Error processing PDF:", error);});
-function cvCommands (cvObject)
-{ const commands = [];
-  Object.keys(cvObject).forEach(category=>{
-    if(Array.isArray(cvObject[category]))
-    {
-      cvObject[category].forEach(item=>{
-        const command = {
-          action: 'add',
-          category: category,
-          item: item
-        };
-        commands.push(command);
-      });
-    }
-    else
-    {
-      const command = {
-        action: 'add',
-        category: category,
-        item: cvObject[category]
-      };
-      commands.push(command);
-    }
-  });
-  return {path:"cvUpdateCommands",commands:commands,parentPath,path};
-}
+
 module.exports = {
   run,
   processPDF,
