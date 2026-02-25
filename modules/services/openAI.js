@@ -78,11 +78,14 @@ async function runOllama(texts, functionTitleList) {
   console.log("Ollama raw output:", content);
 
   // Try to parse JSON if the model returned structured data
+  const  obj = { cvObject: JSON.parse(content) };
+  console.log(obj.cvObject.experience,obj.cvObject.degrees,obj.cvObject.competencies,obj.cvObject.skills);
   try {
-    return { cvObject: JSON.parse(content) };
-  } catch {
+    return obj;
+  } catch (error) {
+    console.error("Error parsing JSON:", error);
     return { raw: content };
-  }
+  }``
 }
 
 async function run(texts,functionTitleList ) {
