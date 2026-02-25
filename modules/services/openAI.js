@@ -41,8 +41,18 @@ async function processPDF(filePath, functionTitleList =[null,"Architecte","Urban
 const fetch = require("node-fetch"); // Node 18+ has global fetch, otherwise install node-fetch
 
 async function runOllama(texts, functionTitleList) {
-  const systemPrompt = "You are a cv text content to object assistant..." // keep your long prompt
+  // Build the system prompt
+  const systemPrompt =
+    "You are a cv text content to object assistant." +
+    " You receive read text and extract Curriculum vitae info" +
+    " and collect personal details, experience, degrees and skills then put these into an object" +
+    " for each new item in the category inside the curriculum vitae and translate the content into French." +
+    " You should be ready to extract the content from the text and put it into the right category." +
+    " You should be ready to understand English and French but the end result is in French." +
+    " You will return the result as an object for each text with the following format:\n" +
+    "{ personalDetails: { prefix:'', functionTitle: /*must be in the list [" + functionTitleList.join(",") + "]*/'', functionTitleTyped:'', fullName:'', email:'', phone:'', address:'' }, experience:[{ name:'', newname:'', company:'', position:'', startDate:'', endDate:'', selectName:'', description:'', id:'', value:'' }], degrees:[{ name:'', newname:'', institution:'', degree:'', fieldOfStudy:'', selectName:'', description:'', startDate:'', endDate:'', id:'', value:'' }], competencies:[{ description:'', name:'', newname:'', value:'', id:'', selectName:'' }]}";
 
+  // Build messages array
   const messages = [
     { role: "system", content: systemPrompt },
     ...texts.map(text => ({
@@ -51,11 +61,12 @@ async function runOllama(texts, functionTitleList) {
     }))
   ];
 
-  const response = await fetch("http://localhost:11434/api/chat", {
+  // Call Ollama chat API
+  const response = await fetch("http://127.0.0.1:11434/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "qwen:0.5b",   // ✅ must match installed model
+      model: "tinyllama:1.1b", // ✅ use TinyLlama or another installed model
       messages,
       stream: false
     })
@@ -63,8 +74,10 @@ async function runOllama(texts, functionTitleList) {
 
   const data = await response.json();
   const content = data.message?.content || "";
-  console.log("Ollama raw content:", content);
 
+  console.log("Ollama raw output:", content);
+
+  // Try to parse JSON if the model returned structured data
   try {
     return { cvObject: JSON.parse(content) };
   } catch {
