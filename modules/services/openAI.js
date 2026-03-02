@@ -72,9 +72,10 @@ async function runOllama(texts, functionTitleList) {
     })
   });
 
+ console.log(response);
   const data = await response.json();
   const content = data.message?.content || "";
-
+  
   console.log("Ollama raw output:", content);
 
   // Try to parse JSON if the model returned structured data
@@ -173,6 +174,7 @@ of the curriculum vitae content in the following text:\n${text}`
   return {cvObject:JSON.parse(response.choices[0].message.content)};
 }
 
+/*
 runOllama(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperience:\n- Company: ABC Corp\nPosition: Software Engineer\nDuration: Jan 2020 - Present\nSkills: JavaScript, Python, React"],[undefined,"Architecte","Urbaniste","Chargé de mission","Chef de projet","Gestionnaire administratif","Responsable des ressources humaines","Inspecteur des finances","Attaché territorial","Secrétaire administratif","Ingénieur territorial","Conseiller juridique","Contrôleur de gestion","Chargé de communication","Archiviste","Conservateur du patrimoine","Directeur d’établissement public","Agent d’accueil","Technicien supérieur","Responsable informatique/Ingénieur informatique","Chargé des marchés publics","Informaticien Développeur","Hydraulicien","Autre"])
 .then(response => {
   console.log("Final Response from Ollama:", response);
@@ -184,3 +186,4 @@ module.exports = {
   extractTextFromPDF,
   runOllama
 };
+*/
