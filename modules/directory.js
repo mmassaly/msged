@@ -190,13 +190,13 @@ const openAIChargeCV = (req,res)=>{
     console.log(givenPath,parentPath);
     openAIPackage.processPDFwithGemini(givenPath,req.app.locals.occupations).then(response=>{
         console.log(response);
-        return putCVDir({parentPath:parentPath,fullName:response.cvObject.personalDetails.fullName,
+        return putCVDir({body:{parentPath:parentPath,givenPath:givenPath,fullName:response.cvObject.personalDetails.fullName,
             prefix:response.cvObject.personalDetails.prefix,
             functionTitle:response.cvObject.personalDetails.functionTitle,
             functionTitleTyped:response.cvObject.personalDetails.functionTitleTyped,
             competencies:response.cvObject.competencies,
             experiences:response.cvObject.experience,
-            degrees:response.cvObject.degrees},undefined);
+            degrees:response.cvObject.degrees}},undefined);
     }).then(value=> value).then(value=>{console.log("CV chargé avec succès");
         res.status(200).json({message:"CV chargé avec succès!"});}).catch(err=>{console.error(err);
         res.status(500).json( {message:`Il y a eu une erreur ${err.message}`});
