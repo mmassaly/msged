@@ -190,7 +190,7 @@ const openAIChargeCV = (req,res)=>{
     console.log(givenPath,parentPath);
     openAIPackage.processPDFwithGemini(givenPath,req.app.locals.occupations).then(response=>{
         console.log(response);
-        return putCVDir({body:{parentPath:parentPath,givenPath:givenPath,fullName:response.cvObject.personalDetails.fullName,
+        return putCVDir({app: req.app,body:{parentPath:parentPath,givenPath:givenPath,fullName:response.cvObject.personalDetails.fullName,
             prefix:response.cvObject.personalDetails.prefix,
             functionTitle:response.cvObject.personalDetails.functionTitle,
             functionTitleTyped:response.cvObject.personalDetails.functionTitleTyped,
