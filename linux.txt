@@ -85,3 +85,30 @@ Paste is Ctrl + U
 Undo is Shift + U
 Redu is Shift + R
 Comment is Alt + 3
+
+------------------------------------------------------------------------------
+On Linux, you can check disk usage and available space with these commands:
+
+🖥️ Disk Check Commands
+- df -h
+Shows disk space usage for all mounted filesystems in human‑readable format:
+df -h
+- Example output:
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        50G   20G   28G  42% /
+tmpfs           7.8G     0  7.8G   0% /dev/shm
+- lsblk
+Lists block devices (disks and partitions) with sizes:
+lsblk
+- Example:
+NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   100G  0 disk
+└─sda1   8:1    0   100G  0 part /
+- du -sh /path/to/dir
+Shows the size of a specific directory:
+du -sh /home/username
+- ncdu (optional, installable)
+Interactive disk usage viewer:
+sudo apt install ncdu
+ncdu /
+⚙️ Practical TipFor quick checks, df -h is the most useful. If you’re preparing to run Ollama with models like DeepSeek‑R1 Distill (Qwen‑1.5B), make sure you have at least 2–3 GB free disk space for the model files and cache.Would you like me to give you a one‑liner script that shows both available memory and disk space together, so you can monitor system resources before launching Ollama?
