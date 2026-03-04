@@ -1,3 +1,4 @@
+const genaiPack = require("@google/genai");
 const OpenAI = require("openai");
 const dotenv = require('dotenv');
 const pdfParse = require('pdf-parse');
@@ -72,10 +73,9 @@ async function runOllama(texts, functionTitleList) {
     })
   });
 
- console.log(response);
   const data = await response.json();
   const content = data.message?.content || "";
-  
+
   console.log("Ollama raw output:", content);
 
   // Try to parse JSON if the model returned structured data
@@ -174,16 +174,108 @@ of the curriculum vitae content in the following text:\n${text}`
   return {cvObject:JSON.parse(response.choices[0].message.content)};
 }
 
-/*
-runOllama(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperience:\n- Company: ABC Corp\nPosition: Software Engineer\nDuration: Jan 2020 - Present\nSkills: JavaScript, Python, React"],[undefined,"Architecte","Urbaniste","Chargé de mission","Chef de projet","Gestionnaire administratif","Responsable des ressources humaines","Inspecteur des finances","Attaché territorial","Secrétaire administratif","Ingénieur territorial","Conseiller juridique","Contrôleur de gestion","Chargé de communication","Archiviste","Conservateur du patrimoine","Directeur d’établissement public","Agent d’accueil","Technicien supérieur","Responsable informatique/Ingénieur informatique","Chargé des marchés publics","Informaticien Développeur","Hydraulicien","Autre"])
-.then(response => {
-  console.log("Final Response from Ollama:", response);
-}).catch(error => {console.error("Error processing PDF:", error);});
+// runOllama(["John Doe\nEmail: john.doe@example.com\nPhone: 123-456-7890\nExperience:\n- Company: ABC Corp\nPosition: Software Engineer\nDuration: Jan 2020 - Present\nSkills: JavaScript, Python, React"],[undefined,"Architecte","Urbaniste","Chargé de mission","Chef de projet","Gestionnaire administratif","Responsable des ressources humaines","Inspecteur des finances","Attaché territorial","Secrétaire administratif","Ingénieur territorial","Conseiller juridique","Contrôleur de gestion","Chargé de communication","Archiviste","Conservateur du patrimoine","Directeur d’établissement public","Agent d’accueil","Technicien supérieur","Responsable informatique/Ingénieur informatique","Chargé des marchés publics","Informaticien Développeur","Hydraulicien","Autre"])
+// .then(response => {
+//   console.log("Final Response from Ollama:", response);
+// }).catch(error => {console.error("Error processing PDF:", error);});
+
+
+GEMINI_API_KEY = 'AIzaSyBeftC7Vt_Wn9qAhk3ZR4yqt7AILbT7mc0'; 
+const ai = new genaiPack.GoogleGenAI({apiKey: GEMINI_API_KEY});
+//ai.models.list().then(models=>console.log(models));
+
+
+async function main(texts,functionTitleList) {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents:  
+      "You are a cv text content to object assistant." 
+        +"I will give you an model to fill up based on the text. You will answer by filling the following given model with the text that Is following in the Text section."
+        +" \n ----Model section starts here----"
+        +" \n{"
+        +"   personalDetails: {"
+        +"     prefix: '',"
+        +`     functionTitle: /*must be in the list [${functionTitleList.join(',')}]*/'',`
+        +"     functionTitleTyped:'',/* if functionTitle not found in the list for functionTitle put title found*/"
+        +"     fullName: '',"
+        +"     email: '',"
+        +"     phone: '',"
+        +"     address: '',"
+        +"   },"
+        +"   experience: ["
+        +"     {"
+        +"       name:''/* name of the experience for example if the experience is a job then put the name of the job if it's a project put the name of the project and so on*/,"
+        +"       newname:''/*Leave empty*/,"
+        +"       company: '',"
+        +"       position: '',"
+        +"       startDate: '',"
+        +"       endDate: '',"
+        +"       selectName: '' /*round the difference between endDate and startDate into year then unit is ans for more than 1 for less than 1 put < 1 an for 1 put 1 an for +30 put +30 ans*/,"
+        +"       description: '',"
+        +"       id: '' /*put deg for all experience*/,"
+        +"       value:''/*put index of array element as an integer*/"
+        +"     },"
+        +"   ],"
+        +"   degrees: ["
+        +"     {"
+        +"       name:'',/*same as key degree value*/"
+        +"       newname:''/*Leave empty*/,"
+        +"       institution: '',"
+        +"       degree: '',"
+        +"       fieldOfStudy: '',"
+        +"       selectName: '' /*Doctorat,Master,License,BTS,Baccalauréat,BFEM,CFEE,autre,non-diplomé*/,"
+        +"       description: '',"
+        +"       startDate: '',"
+        +"       endDate: '',"
+        +"       id: '' /*put deg for all degree element*/,"
+        +"       value: /*put index of array element as an integer*/"
+        +"     }"
+        +"   ],"
+        +"   competencies/*alias for skills*/: ["
+        +`  {
+              description": ""/*description of the skill for example if the skill is a language put the level of the language and so on*/,
+              name: ""/*name or title of competency*/,
+              newname: ""/*Leave empty*/,
+              value:''/*put index of array element as an integer*/,
+              id: ''/*put comp for all skill element*/,
+              selectName: ''/*must be between undefined,"Débutant","Intermédiaire","Avancé","Expert"*/
+            },`
+        +"     '',"
+        +"   ],"
+        +" }"
+        +" \n ----Model ends here----"
+        +".\n----------Text section starts here----------"
+        +texts.map(textObj => textObj.text).join('')
+        +".\n----------Text section ends here----------"
+        +"\n. Now you must fill up the model based on the resume text."
+        +"\n.----------Answer formatting section-----------"
+        +"\n model whereas model is in json with no comments no delemiters allowing me to use JSON.parse on response.text."
+  });
+  console.log(response.text);
+  return response;
+}
+
+const processPDFwithGemini = async (filePath,occupations = [undefined,"Architecte","Urbaniste","Chargé de mission","Chef de projet","Gestionnaire administratif",
+      "Responsable des ressources humaines","Inspecteur des finances","Attaché territorial",
+      "Secrétaire administratif","Ingénieur territorial","Conseiller juridique","Contrôleur de gestion",
+      "Chargé de communication","Archiviste","Conservateur du patrimoine","Directeur d’établissement public",
+      "Agent d’accueil","Technicien supérieur","Responsable informatique/Ingénieur informatique",
+      "Chargé des marchés publics","Informaticien Développeur","Hydraulicien","Autre"])=>{
+  const textObject = await extractTextFromPDF(filePath);
+  //console.log(textObject);
+  const response = await main(textObject.pages,occupations);
+  const cleaned = response.text.replace(/```json\s*|\s*```/g, "");
+  console.log(cleaned);
+  let returnObject   = {cvObject: JSON.parse(cleaned)};
+  
+  return returnObject;
+  };
+//processPDFwithGemini('../__tests__/principal/Administration/CVS/Mamadou_Massaly_CV_FR-5.pdf');
 
 module.exports = {
   run,
   processPDF,
+  processPDFwithGemini,
   extractTextFromPDF,
   runOllama
 };
-*/

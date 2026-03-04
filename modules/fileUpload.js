@@ -395,6 +395,7 @@ router.post('/', authenticateToken, upload.array('files'), (req, res) => {
     else    
         res.json({ message: 'Les fichiers sont chargés avec succès!' });
 });
+
 function deleteCVHelper(path,req)
 {
     const cvIndex = req.app.locals.cvDirs.
