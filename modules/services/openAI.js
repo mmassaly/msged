@@ -264,12 +264,13 @@ const processPDFwithGemini = async (filePath,occupations = [undefined,"Architect
   const textObject = await extractTextFromPDF(filePath);
   //console.log(textObject);
   const response = await main(textObject.pages,occupations);
-  let returnObject   = {cvObject: JSON.parse(response.text.substring(response.text.indexOf("```json\n{")+"```json".length -1,
-         response.text.indexOf("}\n```")+1))};
-  console.log(returnObject);
+  const cleaned = response.text.replace(/```json\s*|\s*```/g, "");
+  console.log(cleaned);
+  let returnObject   = {cvObject: JSON.parse(cleaned)};
+  
   return returnObject;
   };
-processPDFwithGemini('../__tests__/principal/Administration/CVS/Mamadou_Massaly_CV_FR-5.pdf');
+//processPDFwithGemini('../__tests__/principal/Administration/CVS/Mamadou_Massaly_CV_FR-5.pdf');
 
 module.exports = {
   run,
