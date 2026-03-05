@@ -210,7 +210,7 @@ async function main(texts,functionTitleList) {
         +"       position: '',"
         +"       startDate: '',"
         +"       endDate: '',"
-        +"       selectName: '' /*round the difference between endDate and startDate into year then unit is ans for more than 1 for less than 1 put < 1 an for 1 put 1 an for +30 put +30 ans*/,"
+        +"       selectName: '' /*calculate the difference between endDate and startDate. If endDate is equal to  string present  or current or any other synonym of them then take today's date as endDate. The unit is 'ans' for more than 1 year for less than 1 put < 1 an for 1 put 1 an for more than 30 put +30 ans*/,"
         +"       description: '',"
         +"       id: '' /*put deg for all experience*/,"
         +"       value:''/*put index of array element as an integer*/"
@@ -238,7 +238,7 @@ async function main(texts,functionTitleList) {
               newname: ""/*Leave empty*/,
               value:''/*put index of array element as an integer*/,
               id: ''/*put comp for all skill element*/,
-              selectName: ''/*must be between undefined,"Débutant","Intermédiaire","Avancé","Expert"*/
+              selectName: ''/*must be between 'Débutant',"Intermédiaire","Avancé",'Expert'.If experience cites the competency in a project of startDate or year up to another date or year or upto today for less than or equal to 1 year or unreferenced into experiences, put Débutant. Between 1year-2year put Intermediare. if 2- less than 5 years, put Advancé. if more than 5 say expert. "*/
             },`
         +"     '',"
         +"   ],"
