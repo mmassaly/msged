@@ -211,7 +211,7 @@ async function main(texts,functionTitleList) {
         +"       startDate: '',"
         +"       endDate: '',"
         +"       selectName: '' /*calculate the year difference between endDate and startDate."
-        +"       If endDate is equal to  string present  or current or any other synonym of them then take today's date as endDate."
+        +"       If endDate is equal to  string present  or current or any other synonym of them then use fr-FR date format for todays date"+(new Date(Date.now())).toLocaleDateString('en-US',{day:'numeric',month:'numeric',year:'numeric'})+" as endDate."
         +"       The unit is 'ans' for more than 1 year for less than 1 put < 1 an for 1 put 1 an for more than 30 put +30 ans"
         +"       Note that the start year of the job is either dd/MM/yyyy - dd/MM/yyyy or MM/yyyy - MM/yyyy or yyyy - yyyy or from text combinations of month word values like"
         +"       or startDate.toLocaleDateString(french?'fr_FR':'en_US',{date:(long)?'long':'numeric':'',month:long?'long':'numeric',year:'numeric'}) - startDate.toLocaleDateString(french?'fr_FR':'en_US',{date:(long)?'long':'numeric':'',month:long?'long':'numeric',year:'numeric'})where date may not be present eg Juillet 2021 - January 2023 where year difference is 1.5year rounded to 2 year or 2 ans    */,"
