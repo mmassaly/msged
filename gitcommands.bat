@@ -69,3 +69,4 @@ git commit -m "Remove file.txt"
 - Remove completely → git rm file.txt
 
 Do you want me to show you the exact commands for removing a tracked folder like modules/Data from Git but keeping it locally, so you can safely ignore it going forward?
+349803

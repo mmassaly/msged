@@ -1,7 +1,8 @@
 //nvm install 18
 //nvm use 18
 
-const roomUpdates = require('./roomUtil');
+const roomUtil = require('./roomUtil');
+const roomUpdates = roomUtil.roomUpdates;
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
