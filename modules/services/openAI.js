@@ -180,7 +180,7 @@ of the curriculum vitae content in the following text:\n${text}`
 // }).catch(error => {console.error("Error processing PDF:", error);});
 
 
-let GEMINI_API_KEY = process.env.GEMINI_API_KEY||'AIzaSyBeftC7Vt_Wn9qAhk3ZR4yqt7AILbT7mc0'; 
+let GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
 const ai = new genaiPack.GoogleGenAI({apiKey: GEMINI_API_KEY});
 //ai.models.list().then(models=>console.log(models));
 
