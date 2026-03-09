@@ -180,7 +180,7 @@ of the curriculum vitae content in the following text:\n${text}`
 // }).catch(error => {console.error("Error processing PDF:", error);});
 
 
-let GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
+let GEMINI_API_KEY = process.env.GEMINI_API_KEY||'AIzaSyBeftC7Vt_Wn9qAhk3ZR4yqt7AILbT7mc0'; 
 const ai = new genaiPack.GoogleGenAI({apiKey: GEMINI_API_KEY});
 //ai.models.list().then(models=>console.log(models));
 
@@ -189,8 +189,10 @@ async function main(texts,functionTitleList) {
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents:  
-      "You are a cv text content to object assistant." 
-        +"I will give you an model to fill up based on the text. You will answer by filling the following given model with the text that Is following in the Text section."
+      "You are a cv text content to object assistant.Your job is to collect personal details"
+        +" fill out the experiences and compile them and calculate their length total then collect the degree innformation and the competencies." 
+        +" I will give you an model to fill up based on the text."
+        +" You will answer by filling the following given model with the text that Is following in the Text section."
         +" \n ----Model section starts here----"
         +" \n{"
         +"   personalDetails: {"
@@ -202,7 +204,9 @@ async function main(texts,functionTitleList) {
         +"     phone: '',"
         +"     address: '',"
         +"   },"
-        +"   experience:/*This section contains your time in the office and the acquired experience (e.g Worked at Ford Jan 2000 - to present( e.g Jan 2026 26years) as name)*/ ["
+        +"   experience:/*This section contains your time in the office and the acquired experience "
+        +"  (e.g Worked at Ford Jan 2000 - to present( e.g Jan 2026 26years) as name)"
+        +"  .You must compile the experiences that are noted unded label experience name startdate to endate do not break them up.*/ ["
         +"     {"
         +"       name:''/*Name e.g Cashier at Walmart*/,"
         +"       newname:''/*Leave empty*/,"
@@ -264,7 +268,7 @@ const processPDFwithGemini = async (filePath,occupations = [undefined,"Architect
       "Secrétaire administratif","Ingénieur territorial","Conseiller juridique","Contrôleur de gestion",
       "Chargé de communication","Archiviste","Conservateur du patrimoine","Directeur d’établissement public",
       "Agent d’accueil","Technicien supérieur","Responsable informatique/Ingénieur informatique",
-      "Chargé des marchés publics","Informaticien Développeur","Hydraulicien","Autre"])=>{
+      "Chargé des marchés publics","Développeur de logiciels","Hydraulicien","Autre"])=>{
   const textObject = await extractTextFromPDF(filePath);
   //console.log(textObject);
   const response = await main(textObject.pages,occupations);
@@ -274,6 +278,7 @@ const processPDFwithGemini = async (filePath,occupations = [undefined,"Architect
   
   return returnObject;
   };
+
 //processPDFwithGemini('../__tests__/principal/Administration/CVS/Mamadou_Massaly_CV_FR-5.pdf');
 
 module.exports = {
