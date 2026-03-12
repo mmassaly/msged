@@ -17,7 +17,8 @@ const authenticateToken = (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
     if (!token) return res.sendStatus(401);
-    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
+    const yourSession = req.app.locals.sessions.filter(session => session.username == userName)
+    .find( session => session.currentToken == token || session.previousToken == token  );
     if(!yourSession)
     {
         res.sendStatus(403);return;

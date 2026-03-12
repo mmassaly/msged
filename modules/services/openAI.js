@@ -190,7 +190,7 @@ async function main(texts,functionTitleList) {
     model: "gemini-2.5-flash",
     contents:  
       "You are a cv text content to object assistant.Your job is to collect personal details"
-        +" fill out the experiences and compile them and calculate their length total then collect the degree innformation and the competencies." 
+        +" fill out the experiences and compile them and calculate their length total then collect the degree innformation and the competencies.I do not need any english in the CV all content should be in french except quotes or personal names." 
         +" I will give you an model to fill up based on the text."
         +" You will answer by filling the following given model with the text that Is following in the Text section."
         +" \n ----Model section starts here----"
@@ -198,7 +198,7 @@ async function main(texts,functionTitleList) {
         +"   personalDetails: {"
         +"     prefix: '',"
         +`     functionTitle: /*must be in the list [${functionTitleList.join(',')}]*/'',`
-        +"     functionTitleTyped:'',/* if functionTitle not found in the list for functionTitle put title found*/"
+        +"     functionTitleTyped:'',/* if functionTitle not found in the list for functionTitle put title found and format with firstLetterToUpperCase rest is toLowerCase*/"
         +"     fullName: '',"
         +"     email: '',"
         +"     phone: '',"
@@ -246,7 +246,7 @@ async function main(texts,functionTitleList) {
               newname: ""/*Leave empty*/,
               value:''/*put index of array element as an integer*/,
               id: ''/*put comp for all skill element*/,
-              selectName: ''/*must be between 'Débutant',"Intermédiaire","Avancé",'Expert'.If experience cites the competency in a project of startDate or year up to another date or year or upto today for less than or equal to 1 year or unreferenced into experiences, put Débutant. Between 1year-2year put Intermediare. if 2- less than 5 years, put Advancé. if more than 5 say expert. "*/
+              selectName: ''/*must be between 'Débutant',"Intermédiaire","Avancé",'Expert'.If experience cites the competency in projects take the cumulation of startDate and endDate difference and use the following rule.if the sum of one or more projects that have cited the competency have a startDate or start year up to another date or year or up to today that is less than or equal to 1 year or unreferenced into experiences, put Débutant. Between 1year-2year put Intermediare. if 2- less than 5 years, put Advancé. if more than 5 say expert. "*/
             },`
         +"     '',"
         +"   ],"
