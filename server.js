@@ -5,7 +5,7 @@ const fileUploadRoutes = require('./modules/fileUpload');
 const directoryRoutes = require('./modules/directory');
 const authentificationRoutes = require('./modules/authentification');
 const updateRoutes = require('./modules/update');
-const retrievalRoutes = require('./modules/retrievals');
+const retrievalRoutes = require('./modules/retrievals').router;
 
 const fs = require('fs');
 

@@ -6,6 +6,7 @@ const pathObj = require('path');
 const router = express.Router();
 const mime = require('mime-types');
 const openAIPackage= require('./services/openAI');
+const insertOccupationUtil = require('./retrievals').insertOccupationUtil;
 router.use(express.json());
 // In-memory storage for demonstration purposes
 
@@ -237,7 +238,22 @@ const putCVDir = (req,res)=>{
         cvInMemory.competencies = competencies;
         cvInMemory.degrees = degrees;
         cvInMemory.experiences = experiences;
+        let titleOne =  cvInMemory.functionTitle.toLowerCase().split('')
+            .map((val,index)=> index == 0? val.toUpperCase():val).join('').trim();
+        let titleTwo =  cvInMemory.functionTitleTyped.toLowerCase().split('')
+            .map((val,index)=> index == 0? val.toUpperCase():val).join('').trim();
         
+        if(!titleOne && titleTwo && !req.app.locals.occupations.find(val=> titleTwo))
+        {
+            try
+            {
+                insertOccupationUtil(req,titleTwo);
+            }
+            catch(err)
+            {
+
+            }
+        }
         if(!res)
         {
             cvInMemory.chargedFromAI = true;

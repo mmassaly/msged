@@ -93,4 +93,23 @@ router.post("/occupations",authenticateToken,async(req,res)=>{
     allRoomUpdated(req,command);
     res.sendStatus(200);
 });
-module.exports = router;
+
+const insertOccupationUtil = async(req,occupation)=>{
+    let last = occupation;
+    if(req.app.locals.occupations.length  > 0)
+    {
+        let lastIndex = req.app.locals.occupations.length -1;
+        last = req.app.locals.occupations[lastIndex];
+        req.app.locals.occupations[lastIndex] = occupation;
+    }    
+    req.app.locals.occupations.push(last);
+    if(req.headers["test"] != 'true')
+    {
+        fs.writeFileSync("./modules/Data/occupations.json",JSON.stringify(req.app.locals.occupations));//fs was not present
+    }
+    
+    var command ={entryparams:{fieldName:"occupations",operation:"add_occupation"},
+        command:{occupation}};
+    allRoomUpdated(req,command);
+};
+module.exports = [router,insertOccupationUtil];
