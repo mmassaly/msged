@@ -112,4 +112,4 @@ const insertOccupationUtil = async(req,occupation)=>{
         command:{occupation}};
     allRoomUpdated(req,command);
 };
-module.exports = [router,insertOccupationUtil];
+module.exports = {router,insertOccupationUtil};
