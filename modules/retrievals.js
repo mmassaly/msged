@@ -1,7 +1,7 @@
 const url = require('url');
 const express = require('express');
 const fs = require('node:fs');
-const {allRoomUpdated} = require('./roomUtil');
+const {allRoomUpdated,roomUpdates} = require('./roomUtil');
 const router = express.Router();
 router.use(express.json());
 const jwt = require('jsonwebtoken');
@@ -69,6 +69,79 @@ router.delete("/occupations",authenticateToken,async(req,res)=>{
             var command ={entryparams:{fieldName:"occupations",operation:"remove_occupation"},
                 command:{occupation}};
             allRoomUpdated(req,command);
+        }
+    }
+    res.sendStatus(200);
+});
+router.put('/occupations',authenticateToken,async(req,res)=>{
+    const {oldOccupation,occupation} = req.body;
+    if(req.app.locals.occupations.length  > 0)
+    {
+        req.app.locals.occupations = req.app.locals.occupations.map(element=> element == oldOccupation?occupation:element);
+    }
+    if(!req.app.locals.occupations.find(element=> element == occupation))
+    {
+        req.app.locals.occupations.push(occupation);
+    }
+    if(req.headers["test"] != 'true')
+    {
+        fs.writeFileSync("./modules/Data/occupations.json",JSON.stringify(req.app.locals.occupations));//fs was not present
+    }
+    
+    var command ={entryparams:{fieldName:"occupations",operation:"edit_occupation"},
+        command:{occupation,oldOccupation}};
+    let entriesOfCvDic = Object.entries(req.app.locals.cvDirs);
+    let write = false;
+    
+    if(entriesOfCvDic.length > 0)
+    {
+        entriesOfCvDic.forEach(([key,value])=>{      
+            var command2 ={entryparams:{fieldName:"cv_functionTitles",operation:"edit_occupation"},
+            command:{}};
+            let confirmed = false;
+            if( value.functionTitle == oldOccupation)
+            {
+                value.functionTitle = occupation;
+                command2.command.functionTitle = occupation;
+                confirmed = true;
+                if(!write)
+                    write = true;
+            }
+            if( value.functionTitleTyped == oldOccupation)
+            {
+                value.functionTitleTyped = occupation;
+                command2.command.functionTitleTyped = occupation;
+                confirmed = true;
+                if(!write)
+                    write = true;
+            }  
+            if(confirmed)
+            {
+                try
+                {
+                    roomUpdates(req,key,command2);
+                }
+                catch(err)
+                {
+
+                }
+            }      
+        });
+    }
+    allRoomUpdated(req,command);
+    if(write)
+    {
+        try
+        {            
+            if(req.headers["test"] != 'true')
+            {
+                fs.writeFileSync('./modules/Data/cvs.json'
+                    ,JSON.stringify(req.app.locals.cvs));
+            }
+        }
+        catch(err)
+        {
+            console.error(err);
         }
     }
     res.sendStatus(200);

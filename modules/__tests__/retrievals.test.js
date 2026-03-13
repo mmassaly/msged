@@ -1,4 +1,5 @@
-const retrievalsRouter = require("../retrievals");
+const {router}= require("../retrievals");
+const retrievalsRouter = router;
 const request = require('supertest');
 const express = require('express');
 const bcrypt = require('bcrypt');
@@ -34,6 +35,11 @@ describe('testing /occupations',()=>{
         app.locals.occupations = ["A","B"];
         app.locals.intervals = [];
         app.locals.secretKey = 'testsecret';
+        app.locals.cvDirs = 
+        {   
+            testSubject1:{functionTitle:"Singer"},
+            testSubject2:{functionTitleTyped:"Singer"}
+        };
         app.use(retrievalsRouter); 
     });
 
@@ -62,6 +68,26 @@ describe('testing /occupations',()=>{
         .send({occupation:"Musician"});
         expect(res.status).toBe(200);
         expect(app.locals.occupations).toContain("Musician");
+        /**
+         *  - toEqual → deep equality
+            - toBe → same reference
+            - toContain → element presence
+            - toHaveLength → size check
+            - expect.arrayContaining([...]) → partial match
+         */
+    });
+    it("editing occupations new value",async()=>{
+         jwt.verify.mockImplementation((token, secret, callback) => {
+            callback(null, session); // simulate successful verification
+        });
+        const res = await request(app).put('/occupations')
+        .set('authorization', "testuser mockedToken")
+        .set('test', "true")
+        .send({occupation:"Musician",oldOccupation:"Singer"});
+        expect(res.status).toBe(200);
+        expect(app.locals.occupations).toContain("Musician");
+        expect(app.locals.cvDirs["testSubject1"].functionTitle).toBe("Musician");
+        expect(app.locals.cvDirs["testSubject2"].functionTitleTyped).toBe("Musician");
         /**
          *  - toEqual → deep equality
             - toBe → same reference
