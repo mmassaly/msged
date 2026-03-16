@@ -73,6 +73,7 @@ router.delete("/occupations",authenticateToken,async(req,res)=>{
     }
     res.sendStatus(200);
 });
+
 router.put('/occupations',authenticateToken,async(req,res)=>{
     const {oldOccupation,occupation} = req.body;
     if(req.app.locals.occupations.length  > 0)
@@ -93,16 +94,20 @@ router.put('/occupations',authenticateToken,async(req,res)=>{
     let entriesOfCvDic = Object.entries(req.app.locals.cvDirs);
     let write = false;
     
+    //console.log(`${entriesOfCvDic.length} entries of cvDic`);
+
     if(entriesOfCvDic.length > 0)
     {
         entriesOfCvDic.forEach(([key,value])=>{      
-            var command2 ={entryparams:{fieldName:"cv_functionTitles",operation:"edit_occupation"},
-            command:{}};
-            let confirmed = false;
+        let confirmed = false;
+        
+        var command2 ={entryparams:{fieldName:"cv",operation:"edit_cv"},
+            command:{put:[],push:[]}};
+                
             if( value.functionTitle == oldOccupation)
             {
                 value.functionTitle = occupation;
-                command2.command.functionTitle = occupation;
+                command2.command.put.push({location:"functionTitle",value:occupation});
                 confirmed = true;
                 if(!write)
                     write = true;
@@ -110,11 +115,13 @@ router.put('/occupations',authenticateToken,async(req,res)=>{
             if( value.functionTitleTyped == oldOccupation)
             {
                 value.functionTitleTyped = occupation;
-                command2.command.functionTitleTyped = occupation;
+                command2.command.put.push({location:"functionTitleTyped",value:occupation});
                 confirmed = true;
                 if(!write)
                     write = true;
             }  
+            
+            //console.log(confirmed?"Modifications passed":"Modifications not passed");
             if(confirmed)
             {
                 try
@@ -146,6 +153,7 @@ router.put('/occupations',authenticateToken,async(req,res)=>{
     }
     res.sendStatus(200);
 });
+
 router.post("/occupations",authenticateToken,async(req,res)=>{
     const {occupation} = req.body;
     let last = occupation;

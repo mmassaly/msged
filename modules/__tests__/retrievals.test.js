@@ -32,14 +32,32 @@ describe('testing /occupations',()=>{
         app.locals.sessions = [
             session
         ];
-        app.locals.occupations = ["A","B"];
+        app.locals.occupations = ["A","B","Singer"];
         app.locals.intervals = [];
         app.locals.secretKey = 'testsecret';
+        app.locals.roomDic = {"base/testSubject1":["base","base/testSubject1"]
+            ,"base/testSubject2":["base","base/testSubject2"]
+            ,"base":["base","base/testSubject1","base/testSubject2"]                
+            };
         app.locals.cvDirs = 
         {   
-            testSubject1:{functionTitle:"Singer"},
-            testSubject2:{functionTitleTyped:"Singer"}
+            "base/testSubject1":{functionTitle:"Singer"},
+            "base/testSubject2":{functionTitleTyped:"Singer"}
         };
+        app.locals.sessions = [session,{ username: 'testuser1',
+                 password: 'pass123',
+                 currentToken: 'mockedToken',
+                 previousToken: null,
+                 type: 'secret',
+                 room: 'base/testSubject2',
+                 commands: []},
+                 { username: 'testuser2',
+                 password: 'pass123',
+                 currentToken: 'mockedToken',
+                 previousToken: null,
+                 type: 'secret',
+                 room: 'base/testSubject2',
+                 commands: []}];
         app.use(retrievalsRouter); 
     });
 
@@ -86,8 +104,29 @@ describe('testing /occupations',()=>{
         .send({occupation:"Musician",oldOccupation:"Singer"});
         expect(res.status).toBe(200);
         expect(app.locals.occupations).toContain("Musician");
-        expect(app.locals.cvDirs["testSubject1"].functionTitle).toBe("Musician");
-        expect(app.locals.cvDirs["testSubject2"].functionTitleTyped).toBe("Musician");
+        expect(app.locals.cvDirs["base/testSubject1"].functionTitle).toBe("Musician");
+        expect(app.locals.cvDirs["base/testSubject2"].functionTitleTyped).toBe("Musician");
+        /*  var command2 ={entryparams:{fieldName:"cv",operation:"edit_cv"},
+             command:{put:[],push:[]}};
+        */
+        
+             app.locals.sessions.forEach((asession,index)=>index >= 2?console.log(asession.commands[0].entryparams,asession.commands[0].command.put):console.log(""));
+        /*var command ={entryparams:{fieldName:"occupations",operation:"edit_occupation"},
+        command:{occupation,oldOccupation}};*/
+           
+        expect(app.locals.sessions[1].commands.find(command=> (command.entryparams.fieldName == "occupations"
+            && command.entryparams.operation =="edit_occupation") && (command.command.occupation 
+            && command.command.oldOccupation))).toBeDefined();
+        
+        expect(app.locals.sessions[1].commands.find(command=> ((command.entryparams.fieldName == "cv"
+            && command.entryparams.operation =="edit_cv") && (command.command.put[0].value == "Musician" 
+            && command.command.put[0].location  == "functionTitle"))
+        
+            || (app.locals.sessions[2].commands.find(command=> (command.entryparams.fieldName == "cv"
+            && command.entryparams.operation =="edit_cv") && (command.command.put[0].value == "Musician" 
+            && command.command.put[0].location  == "functionTitleTyped"))))).toBeDefined();
+        
+
         /**
          *  - toEqual → deep equality
             - toBe → same reference
@@ -110,4 +149,5 @@ describe('testing /occupations',()=>{
         expect(res.status).toBe(200);
         expect(app.locals.occupations).not.toContain("Musician");
     })
+
 });

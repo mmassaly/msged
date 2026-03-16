@@ -10,9 +10,8 @@ function allRoomUpdated(req,command)
 function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=undefined)
 {
     //console.log(req.app.locals.roomDic);
-    console.log(room);
+    //console.log(room);
     const roomsReferenced = req.app.locals.roomDic[room];
-    console.log("Rooms referenced...");
     console.log(roomsReferenced);
     //console.log(command);
     if(command.isAdditionalCommand)
