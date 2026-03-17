@@ -2,6 +2,7 @@ const path = require('path');
 
 function allRoomUpdated(req,command)
 {
+    console.log( req.app.locals.sessions.length+" all these sessions ");
     req.app.locals.sessions.forEach(session => 
     {
         session.commands.push(command);
