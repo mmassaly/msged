@@ -184,7 +184,7 @@ const insertOccupationUtil = async(req,occupation)=>{
         req.app.locals.occupations[lastIndex] = occupation;
     }    
     req.app.locals.occupations.push(last);
-    if(req.headers["test"] != 'true')
+    if(!req.headers || req.headers["test"] != 'true')
     {
         fs.writeFileSync("./modules/Data/occupations.json",JSON.stringify(req.app.locals.occupations));//fs was not present
     }
