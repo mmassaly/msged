@@ -216,7 +216,7 @@ const putCVDir = (req,res)=>{
                     ,{location:"degrees",value: degrees}
                     ,{location:"experiences", value: experiences}]
                 ,put:[{location:"fullName", value: fullName},{location:"prefix",value:prefix},{location:"functionTitle",value:functionTitle}
-                    ,{location:"functionTitleType",value:functionTitleTyped},{location:"isCV",value:true}]
+                    ,{location:"functionTitleTyped",value:functionTitleTyped},{location:"isCV",value:true}]
     }};
         
         var cvInMemory = req.app.locals.cvs[givenPath];
