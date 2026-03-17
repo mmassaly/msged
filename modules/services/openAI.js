@@ -198,7 +198,7 @@ async function main(texts,functionTitleList) {
         +"   personalDetails: {"
         +"     prefix: '',"
         +`     functionTitle: /*must be in the list [${functionTitleList.join(',')}]*/'',`
-        +"     functionTitleTyped:'',/* if functionTitle not found in the list for functionTitle put title found and format with firstLetterToUpperCase rest is toLowerCase*/"
+        +"     functionTitleTyped:'',/* if functionTitle not found in the list for functionTitle put title found and format with firstLetterToUpperCase rest is toLowerCase. You can look for appropriate title throughout the document sections for example into experiences or into formations if not provided into personnal details (e.g into Experiences or Formations or profile into or description).*/"
         +"     fullName: '',"
         +"     email: '',"
         +"     phone: '',"
