@@ -4,6 +4,7 @@ function allRoomUpdated(req,command)
 {
     req.app.locals.sessions.forEach(session => 
     {
+        console.log("I am sending to session of " + session.username);
         session.commands.push(command);
     });
 }
