@@ -243,11 +243,24 @@ const putCVDir = (req,res)=>{
         let titleTwo =  cvInMemory.functionTitleTyped.toLowerCase().split('')
             .map((val,index)=> index == 0? val.toUpperCase():val).join('').trim();
         
-        if(!titleOne && titleTwo && !req.app.locals.occupations.find(val=> titleTwo))
+        if(titleTwo && !req.app.locals.occupations.find(val=> titleTwo== val))
         {
             try
             {
                 insertOccupationUtil(req,titleTwo);
+            }
+            catch(err)
+            {
+
+            }
+        }
+        
+        if(titleOne 
+            && !req.app.locals.occupations.find(val=> titleOne == val))
+        {
+            try
+            {
+                insertOccupationUtil(req,titleOne);
             }
             catch(err)
             {
