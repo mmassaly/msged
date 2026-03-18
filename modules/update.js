@@ -71,12 +71,17 @@ router.get('/', authenticateToken, (req, res) => {
         res.status(401).json({message:"You must login."});
         return;
     }
-    const interval = setInterval(()=>{
+    const interval = setInterval(()=>{  
         if(yourSession.commands.length > 0)
         {
             console.log(req.app.locals.sessions);
             res.json({message:"Il y a des mises à jours.",commands:yourSession.commands});
             clearInterval(interval);
+        }
+        else if(yourSession.hasFinished)
+        {
+            res.end();
+            clearInterval(interval);   
         }
     },200);
 });

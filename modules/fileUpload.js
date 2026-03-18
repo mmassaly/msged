@@ -18,13 +18,22 @@ const authenticateToken = (req, res, next) => {
     const userName = authHeader && authHeader.split(' ')[0];
     if (!token) return res.sendStatus(401);
     const yourSession = req.app.locals.sessions.filter(session => session.username == userName)
-    .find( session => session.currentToken == token || session.previousToken == token  );
+    .find( session => session.currentToken == token || session.oldToken == token  );
     if(!yourSession)
     {
         res.sendStatus(403);return;
     }    
     jwt.verify(token, req.app.locals.secretKey, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) 
+        {
+            if(yourSession.oldToken == token && req.method == "POST")
+            {
+                req.user = user;
+                next();
+            }
+            else
+            return res.sendStatus(403);
+        }
         req.user = user;
         next();
     });

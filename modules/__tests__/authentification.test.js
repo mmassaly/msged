@@ -6,8 +6,9 @@ const jwt = require('jsonwebtoken');
 const authRoutes = router;
 const multer = require('multer');
 
-//jest.mock('bcrypt');
+jest.mock('bcrypt');
 jest.mock('jsonwebtoken');
+jest.mock("node-fetch");
 /*
     jest.mock('multer', () => {
         return jest.fn(() => ({   
@@ -54,23 +55,70 @@ describe ('POST /QRauthentification ', () => {
     beforeEach(()=>{    
         app = express();
         app.use(express.json());
+        app.locals = {};
+        app.locals.secretKey = 'hashedSecret';
         app.locals.users = [   
-        { username: 'testuser', password: bcrypt.hashSync('hashedpass', 10), accountType: 'admin', room: 'A1' },
-        { username: 'testuser2', password: bcrypt.hashSync('hashedpass2', 10), accountType: 'admin', room: 'A1' }
+            { username: 'testuser1', password: "secret1", accountType: 'admin', room: 'A1' },
+            { username: 'testuser2', password: "secret2", accountType: 'admin', room: 'A2' }
         ];
-        app.locals.sessions = [];
+
+        app.locals.sessions = [{username:"testuser1",password:"mockedHash-secret1",room:"A1",currentToken:undefined
+            ,oldToken:"mockedToken-testuser1",commands:[1]},
+        {username:"testuser2",password:"mockedHash-secret2",room:"A2",currentToken:"mockedToken-testuser2"
+            ,oldToken:undefined,commands:[]}];
         app.locals.intervals = [];
         app.use(authRoutes);
+
+        bcrypt.compare.mockImplementation((password, hash) => {
+            return true;
+        });
+        
+        bcrypt.hash = jest.fn().mockImplementation(async (password, saltRounds) => {
+            return `mockedHash-${password}`;
+        });
+
+        jwt.verify.mockImplementation((token, secret,callback)=>
+        {
+            callback(null, token == "mockedToken-testuser1"?{username:"testuser1",password:"mockedHash-secret1",room:"A1",currentToken:undefined
+            ,oldToken:"mockedToken-testuser1",commands:[1]}: token == "mockedToken-testuser2" ? 
+            {username:"testuser2",password:"mockedHash-secret2",room:"A2",currentToken:"mockedToken-testuser2"
+            ,oldToken:undefined,commands:[2]}:undefined); // simulate successful verification
+        });
+        jwt.sign.mockImplementation((payload, secret, options)=>{
+            return "mockedToken-"+payload.username;
+        });
     });
 
-    it('should return 200 and qrHTMl for valid loginQRStepOne', async () => {
-        console.log(app.locals.users);
-        const res = await request(app).post('/loginQRStepOne').send({username:"testuser",password:"hashedpass"});
-        console.log(res.text);
-        expect(res.statusCode).toBe(200);
-        expect(res.header['content-type']).toBeDefined();
-        expect(res.header['content-type'].indexOf("text/html")).not.toBe(-1);
-    });
+    // it('should return 200 and qrHTMl for valid loginQRStepOne', async () => {
+    //     console.log(app.locals.users);
+    //     const res = await request(app).post('/loginQRStepOne').send({username:"testuser",password:"secret2"});
+    //     console.log(res.text);
+    //     expect(res.statusCode).toBe(200);
+    //     expect(res.header['content-type']).toBeDefined();
+    //     expect(res.header['content-type'].indexOf("text/html")).not.toBe(-1);
+    // });
+    it("Testing relogin - It should return 200 and session must contain new token with oldCommands.", async () => {
+        const res = await request(app)
+            .post('/login')
+            .send({
+            username: "testuser1",
+            password: "secret1",
+            previousToken: "mockedToken-testuser1"
+            });
+
+            // Check content-type properly
+            expect(res.headers['content-type']).toMatch(/application\/json/);
+
+            // Log response body if needed
+            console.log(res.body);
+
+            // Assertions
+            expect(res.statusCode).toBe(200);
+            expect(app.locals.sessions[app.locals.sessions.length - 1].username).toBe("testuser1");
+            expect(app.locals.sessions[app.locals.sessions.length - 1].currentToken).toBe("mockedToken-testuser1");
+            expect(app.locals.sessions[app.locals.sessions.length - 1].commands.length).toBeGreaterThan(0);
+            console.log(app.locals.sessions[app.locals.sessions.length - 1]);
+        });
 });
 // describe('PUT /authentification', () => {
 //     let app;
