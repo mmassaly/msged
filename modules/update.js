@@ -78,11 +78,6 @@ router.get('/', authenticateToken, (req, res) => {
             res.json({message:"Il y a des mises à jours.",commands:yourSession.commands});
             clearInterval(interval);
         }
-        else if(yourSession.hasFinished)
-        {
-            res.end();
-            clearInterval(interval);   
-        }
     },200);
 });
 
