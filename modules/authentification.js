@@ -351,9 +351,8 @@ const loginHandler = async (req, res) => {
   const { username, password,previousToken} = req.body;
   console.log(req.app.locals.sessions.map(session => JSON.stringify(session)));
   // Check for previous token unless it's loginQRStepTwo
-  let foundUserSession = req.app.locals.sessions.find( session => session.currentToken == previousToken || session.oldToken == previousToken );
   if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
-   || !foundUserSession))
+   || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0))
   {
     //console.log((req.originalUrl.indexOf("loginQRStepTwo") < 0)?"loginQRStepTwo not a part of "+req.originalUrl:"");
     //console.log((!previousToken)?"Previous token missing"
@@ -384,7 +383,7 @@ const loginHandler = async (req, res) => {
   const newSession = {date:new Date(Date.now()), username:username, password:password,
     currentToken : token, oldToken: previousToken,
     type: user.type?user.type:user.accountType == "admin"?"secret":"basic",
-    accountType:user.accountType,room: user.room,hasFinished:false,useragent:req.useragent,commands:[...foundUserSession?.commands ?? []]};
+    accountType:user.accountType,room: user.room,hasFinished:false,useragent:req.useragent,commands:[]};
 /*console.log("************BEFORE************");
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/
