@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const {roomUpdates} = require('./roomUtil');
+const {roomUpdates, allRoomUpdated} = require('./roomUtil');
 const router = express.Router();
 const mime_lookup = require('mime-types');
 const fs = require('node:fs');
@@ -16,9 +16,10 @@ const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
+    //console.log(token,userName,req.app.locals.sessions.filter(session => session.username == userName));
     if (!token) return res.sendStatus(401);
     const yourSession = req.app.locals.sessions.filter(session => session.username == userName)
-    .find( session => session.currentToken == token || session.oldToken == token || session.oldTokens.find(atoken=> atoken == token)  );
+    .find( session => session.currentToken == token || session.oldToken == token || session.oldTokens?.find(atoken=> atoken == token)  );
     if(!yourSession)
     {
         res.sendStatus(403);return;
@@ -38,6 +39,36 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+const storage_2 = multer.diskStorage({limits: {
+    fileSize: Infinity // This disables file size limit
+    },
+    destination:(req, file, cb)=>{
+        console.log("Inside destination");
+        let uploadPath = path.join("./","Data","partners");
+        if(!fs.existsSync(uploadPath))
+            fs.mkdirSync(uploadPath,{ recursive: true });
+        cb(null, uploadPath);
+    }
+    ,
+    filename: (req, file, cb) => {
+        let fileName = "empty.txt";
+        if(file)
+        {
+            let date = new Date(Date.now());
+            fileName = "base_"+date.toLocaleDateString().split('/').join('-')
+            +"_"+date.getHours()+"-"+date.getMinutes()+"-"+date.getSeconds()
+            +"_base_"+Buffer.from(file.originalname, 'latin1').toString('utf8');
+            
+            console.log("Inside filename");
+            req.uploadObject = {path:path.join('Data','partners',fileName)};
+            var command = {entryparams:{fieldName:"partners",operation:"add_partner"},
+            command:{name:fileName,path:req.uploadObject.path,
+                type: path.basename(file.originalname).split(".")[1],date:date,year:date.getFullYear()}};
+            req.command = command;
+        }
+        cb(null,fileName);
+    }
+});
 // Multer setup for file uploads
 const storage = multer.diskStorage({
     limits: {
@@ -71,8 +102,7 @@ const storage = multer.diskStorage({
                 var obj;
                 try
                 {
-                    obj = req.body.pathsObj[Buffer.from(file.originalname, 'latin1').toString('utf8')].find(v=> !v.fileconsumed);
-                        
+                    obj = req.body.pathsObj[Buffer.from(file.originalname, 'latin1').toString('utf8')].find(v=> !v.fileconsumed);        
                 }
                 catch(err)
                 {
@@ -377,7 +407,12 @@ const upload = multer({ storage ,limits: {
     files: Infinity,
     parts: Infinity
   }});
-const checkArchiveFolder = (req)=>{
+const upload_2 = multer({ storage: storage_2 ,limits: {
+    files: Infinity,
+    parts: Infinity
+  }});
+
+  const checkArchiveFolder = (req)=>{
     var {folderName} = req.body;
     console.log("Checking target folder..........................");
     console.log(folderName);
@@ -391,6 +426,125 @@ const checkArchiveFolder = (req)=>{
     req.checkArchiveFolder = false;
     //next(); //not longer a middleware
 }
+router.delete('/partners',authenticateToken,(req,res)=>{
+    const {name} = req.body;
+    if(!name)
+    {
+        res.status(400).json({message:"Vous devez identifier le partenaire"});
+        return;
+    }
+    const partner = req.app.locals.partners.find(partner=> partner.name == name);
+    if(partner)
+    {
+        try
+        {
+            if(fs.existsSync(path.join("./",partner.path)))
+            {
+                fs.unlinkSync(partner.path);
+            }
+            
+            req.app.locals.partners = req.app.locals.partners.filter(partnerElement=> partnerElement !== partner);
+            fs.writeFileSync(path.join("./","modules/Data/partners.json"),JSON.stringify(req.app.locals.partners));
+            res.status(200).end();
+            return;
+        }
+        catch(err)
+        {
+            console.trace(err);
+            res.status(500).json({message:err.message});
+            return;
+        }
+    }
+    res.status(404).json({"message":"Le partenaire n'as pas été retrouvé."});
+});
+router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,next)=>{
+    const {name,newName,newDescription} = req.body;
+    const partners = req.app.locals.partners;
+    const partner = partners.find(element=> element.name == name);
+    console.log("inside validy middleware",name,newName,newDescription,partners,partner);
+    if(name && (newName || newDescription))
+    {
+        if(!partner)
+        {
+            res.status(404).end();
+            return;
+        }
+        try
+        {
+            fs.unlinkSync(path.join('./',partner.path));
+        }
+        catch(err)
+        {
+            console.trace(err);
+            res.status(500).end();return;
+        }
+        console.log("inside validy middleware-calling next");
+        next();
+        return;
+    }
+    res.status(403).end();
+},(req,res)=>{
+    const {name,newName,newDescription} = req.body;
+    const uploadObject = req.uploadObject;
+    
+    uploadObject.name = newName;
+    uploadObject.description = newDescription;
+    
+    let partners = req.app.locals.partners;
+    
+    req.app.locals.partners = partners.filter(partner=> partner.name !== name);
+    req.app.locals.partners.push(uploadObject);
+    //console.trace(partners);
+    try
+    {
+        req.command.entryparams.operation = "edit_partner";
+        req.command.description = newDescription;
+        req.command.name = newName;
+        fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));
+        allRoomUpdated(req,req.command);
+        if(fs.existsSync(path.join("./","Data/partners/empty.txt")))
+            fs.unlinkSync(path.join("./","Data/partners/empty.txt"));
+    }
+    catch(err)
+    {
+        res.status(500).end();
+        return;
+    }
+    res.status(200).end();
+});
+router.post('/partners',authenticateToken,upload_2.single('file'),(req,res)=>{
+    const {name,description} = req.body;
+    const uploadObject = req.uploadObject;
+    uploadObject.name = name;
+    uploadObject.description = description;
+    const partners = req.app.locals.partners;
+
+    if(partners.find(partner=> partner.name == name))
+    {
+        if(fs.existsSync( path.join("./",uploadObject.path)) )
+            try
+            {
+                fs.unlinkSync( path.join("./",uploadObject.path) );
+            }
+            catch(err)
+            {
+
+            }
+        res.status(404).end();
+        return;
+    }
+    else
+    {
+        
+        partners.push(uploadObject);
+        console.trace(uploadObject,partners);
+        fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));    
+        req.command.description = description;
+        req.command.name = name;
+        allRoomUpdated(req,req.command);
+    }
+    res.status(200).end();
+});
 router.post('/', authenticateToken, upload.array('files'), (req, res) => {
     //const folder = req.body.folder; // Get the folder to save into
     // Save metadata in the database (if necessary)

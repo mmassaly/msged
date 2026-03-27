@@ -22,6 +22,7 @@ app.locals.secretAdminAccountKey = process.env.SECRET_ADMIN_ACCOUNT_KEY;
 app.locals.secretPassword = process.env.SECRET_PASSWORD;
 app.locals.intervals = [];
 
+
 const usersStr = directoryRoutes.readFile("./modules/Data/users.json");
 if(usersStr !== undefined)
 {
@@ -90,6 +91,14 @@ if(occupationsStr !== undefined)
 }
 else
     app.locals.occupations =[];
+
+const partnersStr = directoryRoutes.readFile("./modules/Data/partners.json");
+if(partnersStr !== undefined)
+{
+    app.locals.partners = JSON.parse(partnersStr);
+}
+else
+    app.locals.partners = [];
 
 app.use(cors({
     origin: "*",

@@ -11,7 +11,98 @@ const authRoutes = router;
 jest.mock('bcrypt');
 jest.mock('jsonwebtoken');
 
+describe("POST/api/partners",()=>{
+    beforeAll(()=>{
+        app = express();
+                app.use(express.json());
+                app.locals = {};
+                app.locals.secretKey = 'hashedSecret';
+                app.locals.users = [   
+                    { username: 'testuser1', password: "secret1", accountType: 'admin', room: 'A1' },
+                    { username: 'testuser2', password: "secret2", accountType: 'admin', room: 'A2' }
+                ];
+                app.locals.partners = [];
+                app.locals.sessions = [{username:"testuser1",password:"mockedHash-secret1",room:"A1",currentToken:"mockedToken-testuser1"
+                    ,oldToken:undefined,oldTokens:[],commands:[]},
+                {username:"testuser2",password:"mockedHash-secret2",room:"A2",currentToken:"mockedToken-testuser2"
+                    ,oldToken:undefined,oldTokens:[],commands:[]}];
+                app.locals.intervals = [];
+                app.use(authRoutes);
+        
+                bcrypt.compare.mockImplementation((password, hash) => {
+                    return true;
+                });
+                
+                bcrypt.hash = jest.fn().mockImplementation(async (password, saltRounds) => {
+                    return `mockedHash-${password}`;
+                });
+        
+                jwt.verify.mockImplementation((token, secret,callback)=>
+                {
+                    callback(null, token == "mockedToken-testuser1"?{username:"testuser1",password:"mockedHash-secret1",room:"A1",currentToken:"mockedToken-testuser1"
+                    ,oldToken:undefined,commands:[1]}: token == "mockedToken-testuser2" ? 
+                    {username:"testuser2",password:"mockedHash-secret2",room:"A2",currentToken:"mockedToken-testuser2"
+                    ,oldToken:undefined,commands:[2]}:undefined); // simulate successful verification
+                });
+                jwt.sign.mockImplementation((payload, secret, options)=>{
+                    return "mockedToken-"+payload.username;
+                });
+    });
 
+    it("posts partner",async ()=>{
+        // const formdata  = new FormData();
+        // const buffer = fs.readFileSync("./files/senelec.png");
+        // formdata.set("name","SENELEC");formdata.set("description","Société nationale d'électricité du Sénégal");
+        // formdata.append("file",new File([buffer],"senelec.png",{type:"image/png"}));
+        const post = await request(app).post('/partners')
+        .set('authorization', 'testuser1 mockedToken-testuser1')
+        .field("name","SENELEC")
+        .field("description","Société nationale d'électricité du Sénégal")
+        .attach('file', './files/senelec.png');
+        console.trace(post.statusCode);
+        expect(fs.existsSync("./Data/partners")).toBe(true);
+        //expect(fs.existsSync("./Data/partners/senelec.png")).toBe(true);
+        expect(app.locals.partners.find(partner=> partner.name == "SENELEC")).toBeDefined();
+        expect(post.status).toBe(200);
+        expect(app.locals.sessions[0].commands.length > 0).toBe(true);
+    });
+
+    it("deletes partner",async ()=>{
+        
+        //expect(fs.existsSync("./Data/partners/base_26-03-2026_8-27-44_base_senelec.png")).toBe(true);
+        expect(JSON.parse(fs.readFileSync("./modules/Data/partners.json")).find(partner=> partner.name == "SENELEC")).toBeDefined();
+        expect(app.locals.partners.find(partner=> partner.name == "SENELEC")).toBeDefined();
+        const deleteResponse = await request(app).delete('/partners')
+        .set('authorization', 'testuser1 mockedToken-testuser1')
+        .send({name:"SENELEC"});
+        if(deleteResponse.headers["content-type"]?.toLowerCase().includes("application/json"))
+            console.trace(JSON.parse(deleteResponse.text));
+        expect(deleteResponse.statusCode).toBe(200);
+        //expect(fs.existsSync("./Data/partners/base_26-03-2026_8-27-44_base_senelec.png")).toBe(false);
+        expect(app.locals.partners.find(partner=> partner.name == "SENELEC")).toBeUndefined();
+        expect(JSON.parse(fs.readFileSync("./modules/Data/partners.json")).find(partner=> partner.name == "SENELEC")).toBeUndefined();
+    })
+
+    it("modifies partner",async ()=>{
+        app.locals.sessions[0].commands.splice(app.locals.sessions[0].commands.length,0);
+        app.locals.partners = JSON.parse(fs.readFileSync("./modules/Data/partners.json"));
+        const put = await request(app).put('/partners')
+        .set('authorization', 'testuser1 mockedToken-testuser1')
+        .field("name","SENELEC")
+        .field("newName","SENEAU")
+        .field("newDescription","Sénégalaise des eaux")
+        .attach('file', './files/seneau.jpeg');
+        //console.trace(post.statusCode);
+        expect(fs.existsSync("./Data/partners")).toBe(true);
+        //expect(fs.existsSync("./Data/partners/seneau.jpeg")).toBe(true);
+        //expect(fs.existsSync("./Data/partners/senelec.jpg")).toBe(false);
+        console.log(app.locals.partners);
+        expect(app.locals.partners.find(partner=> partner.name == "SENEAU" 
+            && partner.description == "Sénégalaise des eaux")).toBeDefined();
+        expect(put.status).toBe(200);
+        expect(app.locals.sessions[0].commands.length > 0).toBe(true);
+    });
+});
 describe("DELETE/api/upload",()=>
 {
     let app;

@@ -27,7 +27,22 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
-
+router.get('/partners',authenticateToken,async (req, res) => {
+    try
+    {
+        if(req.app.locals.partners === undefined)
+        {
+            res.status(404).json({message:"No partners found."});
+            return;
+        }
+        res.status(200).json(req.app.locals.partners);
+        return;
+    }
+    catch(err)
+    {
+        res.status(500).json({message:"erreure de configuration côté serveur",err});
+    } 
+});
 router.get('/departements',authenticateToken,async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
     try
