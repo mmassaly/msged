@@ -61,7 +61,7 @@ const storage_2 = multer.diskStorage({limits: {
             
             console.log("Inside filename");
             req.uploadObject = {path:path.join('Data','partners',fileName)};
-            var command = {entryparams:{fieldName:"partners",operation:"add_partner"},
+            var command = {entryparams:{fieldName:"partners"},
             command:{name:fileName,path:req.uploadObject.path,
                 type: path.basename(file.originalname).split(".")[1],date:date,year:date.getFullYear()}};
             req.command = command;
@@ -427,13 +427,13 @@ const upload_2 = multer({ storage: storage_2 ,limits: {
     //next(); //not longer a middleware
 }
 router.delete('/partners',authenticateToken,(req,res)=>{
-    const {name} = req.body;
+    const {name,path} = req.body;
     if(!name)
     {
         res.status(400).json({message:"Vous devez identifier le partenaire"});
         return;
     }
-    const partner = req.app.locals.partners.find(partner=> partner.name == name);
+    const partner = req.app.locals.partners.find(partner=> partner.name == name && partner.path == path);
     if(partner)
     {
         try
@@ -446,6 +446,9 @@ router.delete('/partners',authenticateToken,(req,res)=>{
             req.app.locals.partners = req.app.locals.partners.filter(partnerElement=> partnerElement !== partner);
             fs.writeFileSync(path.join("./","modules/Data/partners.json"),JSON.stringify(req.app.locals.partners));
             res.status(200).end();
+            var command = {entryparams:{fieldName:"partners",operation:"remove_partner"}
+                            ,command:{name:partner.name,path:partner.path,description:partner.description}};
+            allRoomUpdated(req,command);
             return;
         }
         catch(err)
@@ -484,22 +487,25 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
     }
     res.status(403).end();
 },(req,res)=>{
-    const {name,newName,newDescription} = req.body;
+    const {name,newName,newDescription,path} = req.body;
     const uploadObject = req.uploadObject;
     
     uploadObject.name = newName;
     uploadObject.description = newDescription;
     
     let partners = req.app.locals.partners;
-    
+    let partner = partners.find(partner=> partner.name == name && partner.path == path);
     req.app.locals.partners = partners.filter(partner=> partner.name !== name);
     req.app.locals.partners.push(uploadObject);
     //console.trace(partners);
     try
     {
         req.command.entryparams.operation = "edit_partner";
-        req.command.description = newDescription;
-        req.command.name = newName;
+        req.command.command.newPath = uploadObject.path;
+        req.command.command.path = partner?.path;
+        req.command.command.newName = newName;
+        req.command.command.newDescription = newDescription;
+        req.command.command.name = name;
         fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));
         allRoomUpdated(req,req.command);
         if(fs.existsSync(path.join("./","Data/partners/empty.txt")))
@@ -539,8 +545,9 @@ router.post('/partners',authenticateToken,upload_2.single('file'),(req,res)=>{
         partners.push(uploadObject);
         console.trace(uploadObject,partners);
         fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));    
-        req.command.description = description;
-        req.command.name = name;
+        req.command.entryparams.operation = "add_partner";
+        req.command.command.description = description;
+        req.command.command.name = name;
         allRoomUpdated(req,req.command);
     }
     res.status(200).end();
