@@ -428,14 +428,14 @@ const upload_2 = multer({ storage: storage_2 ,limits: {
 }
 router.delete('/partners',authenticateToken,(req,res)=>{
     const outterPath = path;
-    const {name,path} = req.body;
+    const {name} = req.body;
     
     if(!name)
     {
         res.status(400).json({message:"Vous devez identifier le partenaire"});
         return;
     }
-    const partner = req.app.locals.partners.find(partner=> partner.name == name && partner.path == path);
+    const partner = req.app.locals.partners.find(partner=> partner.name == name && partner.path == req.body.path);
     if(partner)
     {
         try
