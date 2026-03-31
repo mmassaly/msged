@@ -427,7 +427,9 @@ const upload_2 = multer({ storage: storage_2 ,limits: {
     //next(); //not longer a middleware
 }
 router.delete('/partners',authenticateToken,(req,res)=>{
+    const outterPath = path;
     const {name,path} = req.body;
+    
     if(!name)
     {
         res.status(400).json({message:"Vous devez identifier le partenaire"});
@@ -438,13 +440,13 @@ router.delete('/partners',authenticateToken,(req,res)=>{
     {
         try
         {
-            if(fs.existsSync(path.join("./",partner.path)))
+            if(fs.existsSync(outterPath.join("./",partner.path)))
             {
                 fs.unlinkSync(partner.path);
             }
             
             req.app.locals.partners = req.app.locals.partners.filter(partnerElement=> partnerElement !== partner);
-            fs.writeFileSync(path.join("./","modules/Data/partners.json"),JSON.stringify(req.app.locals.partners));
+            fs.writeFileSync(outterPath.join("./","modules/Data/partners.json"),JSON.stringify(req.app.locals.partners));
             res.status(200).end();
             var command = {entryparams:{fieldName:"partners",operation:"remove_partner"}
                             ,command:{name:partner.name,path:partner.path,description:partner.description}};
