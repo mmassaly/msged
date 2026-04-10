@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const {roomUpdates} = require('./roomUtil');
+const {roomUpdates, allRoomUpdated,partnerRoomUpdates,updateRoomsAndSessions} = require('./roomUtil');
 const path = require('path');
 const pathObj = require('path');
 const router = express.Router();
@@ -13,20 +13,20 @@ router.use(express.json());
 const fs = require('fs');
 
 // Function to read a directory and map its structure
-function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
+
+function mapDirectoryorFileUtil(pathPrefix,folderPath,parentPath,req,start,passedValueisFile) {
     var dirrectory = path.join(pathPrefix,parentPath,folderPath);
     const exists = fs.existsSync(dirrectory);
   
-    if(!exists)
+    if(!exists && !passedValueisFile)
     {
         fs.mkdirSync(dirrectory);
     }
+    else if(!exists && passedValueisFile)
+        return undefined;
+
     const stats = fs.statSync(dirrectory);
-    if(folderPath.endsWith("Appel d'offre Janvier-Juin 2024"))
-    {
-        console.log("Folder path is Appel d'offre Janvier-Juin 2024 "+path.join(parentPath,folderPath));
-        console.log(req.app.locals.secretFolders);
-    }
+   
     const mappedDirectory = {
       name: path.basename(folderPath),
       isSecret: req?req.app.locals.secretFolders.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
@@ -84,6 +84,14 @@ function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
     }*/
     return ((req.session && req.session.type == "secret" && mappedDirectory.isSecret) ||!mappedDirectory.isSecret )? mappedDirectory: undefined ;
   }
+function mapDirectory(pathPrefix,folderPath,parentPath,req,start) {
+    return mapDirectoryorFileUtil(pathPrefix,folderPath,parentPath,req,start,false);    
+}
+
+function mapFile(pathPrefix,folderPath,parentPath,req,start) {
+    return mapDirectoryorFileUtil(pathPrefix,folderPath,parentPath,req,start,true);
+}
+
 function readSize(path)
 {
     if(fs.existsSync(path))
@@ -124,7 +132,14 @@ const authenticateToken = (req, res, next) => {
     {
         res.sendStatus(403);//json({ message: 'Invalid username' });;
         return;
-    }  
+    } 
+
+    if(req.method != "GET" && (yourSession.accountType === "partner" || yourSession.accountType === "host" || 
+        (yourSession.accountType !== "admin" && yourSession.accountType !== "user" )) )
+    {
+        res.status(403).json({ message: 'Unauthorized to perform this action' });
+        return;
+    }
     jwt.verify(token, req.app.locals.secretKey, (err, user) => {
         if (err){ 
             return res.sendStatus(403);
@@ -311,6 +326,25 @@ router.post('/CV/charge',authenticateToken,openAIChargeCV);
 router.get('/', authenticateToken, (req, res) => {
     //console.log(req.user);
     //console.log(req.app.locals.sessions);
+    if(req.session.type== "partner" || req.session.type == "host")
+    {
+        if(req.session.partners)
+        {
+            let certainDirectories  = req.session.partners.map(partner => {
+                let currPartnerContent = req.app.locals.partnersDic[partner];
+                if(currPartnerContent)
+                {
+                    currPartnerContent = currPartnerContent.map(entry=>mapFile("./",entry.path,"",req));
+                }
+                let currentDirectory = {name: partner, isDirectory: true, isPartner: true,
+                     path: partner, subdirectories: currPartnerContent? currPartnerContent:[]};
+                return currentDirectory;
+            });
+            res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+            res.json(certainDirectories? certainDirectories: {message:"Pas de dossier trouvé"});
+            return;
+        }
+    }
     const directories =  mapDirectory("./",req.session.room.replaceAll("\\",path.sep)
     ,''
     ,req);
@@ -336,7 +370,6 @@ router.get('/file', authenticateToken, (req, res) => {
     readStream.pipe(res);
    else{
         console.log(`File ${filePath} not found.`);
-        res.write(undefined);
         res.end();
     }
    console.log("done");
@@ -419,22 +452,12 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         req.app.locals.roomDic = 
         RenameRoomsContainingOldPathWithNewPath(oldPath,newPath,req.app.locals.roomDic);
         req.app.locals.secretFolders = 
-        RenameSecretsArrayContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
-        req.app.locals.sessions = req.app.locals.sessions.map(session => {
-            if(session.room.startsWith(oldPath))
-            {
-                session.room = session.room.replace(oldPath,newPath);
-            }
-            return session;
-        });
-        req.app.locals.users = req.app.locals.users.map(user => {
-            if(user.room.startsWith(oldPath))
-            {
-                user.room = user.room.replace(oldPath,newPath);
-            }
-            return user;
-        });
-	    
+            RenameSecretsArrayContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
+        renamePartnerDicArrayValues(req,oldPath,newPath);
+
+        
+        RenameSecretsArrayContainingOldPathWithNewPathInArray(oldPath,newPath,[]);
+        updateRoomsAndSessions(req,oldPath,newPath);
         /*console.log("-------------------------1------------------------");
         console.log(req.app.locals.secretFolders);
         console.log("--------------------------2-----------------------");
@@ -448,7 +471,7 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         writeFile("./modules/Data/secretFolders.json",JSON.stringify(req.app.locals.secretFolders));
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
         writeFile("./modules/Data/users.json",JSON.stringify(req.app.locals.users));
-        
+        writeFile("./modules/Data/partnersDic.json",JSON.stringify(req.app.locals.partnersDic));
         var command ={entryparams:{fieldName:"directories",operation:"rename_directory"},command:{oldPath:oldPath,path:newPath,name:path.basename(newPath),isDirectory:true,parentPath:path.dirname(newPath)}};
         roomUpdates(req,newPath,command);
         fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
@@ -589,10 +612,10 @@ router.post('/', authenticateToken, (req, res) => {
         const uploadPath = path.join("./", 'principal',name);
         req.app.locals.roomDic[uploadPath] =[uploadPath];
         
-        if(name!= "principal")
+        if(name != "principal")
             req.app.locals.roomDic[uploadPath].push("principal");
         try{
-        fs.mkdirSync(uploadPath, { recursive: true });
+            fs.mkdirSync(uploadPath, { recursive: true });
             var command = {entryparams:{fieldName:"directories",operation:"add_directory"}
                 ,command:{path:uploadPath,name:name,isDirectory:true,parentPath:parent.path}};
                 roomUpdates(req,uploadPath,command);
@@ -618,7 +641,75 @@ router.post('/', authenticateToken, (req, res) => {
         res.status(500).json({message:err});
     }
 });
-
+router.delete("/partnerFile",authenticateToken,(req,res)=>{
+    const {name,path,parentPath,fileName} = req.body;
+    try
+    {
+        let foundStuff = req.app.locals.partnersDic[name].filter(value=> value.path != path && value.parentPath != parentPath && value.fileName != fileName);
+        if(req.app.locals.partnersDic[name] && req.app.locals.partnersDic[name].length != req.app.locals.partnersDic[name].length)
+        {
+            req.app.locals.partnersDic[name] = foundStuff;
+            fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
+            var command = {entryparams:{fieldName:"directories",operation:"delete_partner_directory"},
+            command:{path:path,name:name,isDirectory:true,parentPath: parentPath,isPartner:true,fileName}};
+            partnerRoomUpdates(req,name,command);
+            roomUpdates(req,parentPath,command);
+            res.json({message:"Fichier partenaire supprimé avec succès!"});
+            return;
+        }
+        res.json({message:"Fichier partenaire est déjà supprimé."});
+        return;
+    }
+    catch(err)    
+    {
+        console.log(err);
+        res.status(500).json({message:err});
+        return;
+    }
+});
+router.post('/partnerFile', authenticateToken, (req, res) => {
+    
+    const {name,path,parentPath,fileName} = req.body;
+    try
+    {
+        console.log("Begin of stuff");
+        req.app.locals.partnersDic[name] = req.app.locals.partnersDic[name]?[...req.app.locals.partnersDic[name],{path,parentPath,fileName}]:
+                                        [{path,parentPath,fileName}];
+    }
+    catch(err)    {
+        console.log(err);
+        res.status(500).json({message:err});
+        return;
+    }
+    try
+    {
+        console.log("Begin of stuff ./modules/Data");
+        if(!(fs.existsSync('./modules/Data')))
+        {
+            fs.mkdirSync('./modules/Data', { recursive: true });
+        }
+        fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
+    }
+    catch(err)    {
+        console.log(err);
+        res.status(500).json({message:err});
+    }
+    
+    try
+    {
+        var command = {entryparams:{fieldName:"directories",operation:"add_partner_directory"},
+        command:{path:path,name:name,isDirectory:true,parentPath: parentPath,isPartner:true,fileName}};
+        partnerRoomUpdates(req,name,command);
+        roomUpdates(req,parentPath,command);
+    }
+    catch(err)    
+    {
+        console.log(err);
+        res.status(500).json({message:err});
+        return;
+    }
+    res.json({ message: 'Partner directory added successfully!' });
+});
 var RecursiveSplitTest2 = (pathstr,roomDic)=>
 {
     var arr = pathstr.split(path.sep);
@@ -659,6 +750,34 @@ var RenameSecretsArrayContainingOldPathWithNewPathInArray = (oldPath,newPath,arr
     const returnValue = array.map(value=> value.replace(oldPath,newPath));
     return returnValue;
 };
+
+var renamePartnerDicArrayValues =  (req,oldPath,newPath)=>{
+    let foundChangesInPartnersDic = false;
+    let updatedDic = Object.fromEntries(
+        Object.entries(req.app.locals.partnersDic).map(([key, value]) =>{ 
+                let newArray = value.filter(val => {
+                    let parentPathReplaced = val.parentPath.replace(oldPath, newPath);
+                    let pathReplaced = val.path.replace(oldPath, newPath);
+                    if(val.path != pathReplaced || val.parentPath != parentPathReplaced)
+                    {   
+                        foundChangesInPartnersDic = true;
+                        val.path = pathReplaced;
+                        val.parentPath = parentPathReplaced;
+                    }
+                    return val;
+                });
+                return [key, newArray]; 
+            }
+        )
+    );
+    
+    if(foundChangesInPartnersDic)
+    {
+        req.app.locals.partnersDic = updatedDic;
+        fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
+    }
+};
+
 var RenameRoomsContainingOldPathWithNewPath = (oldPath,newPath,roomDic)=>{
     const keys = Object.keys(roomDic);
     const arr = keys.filter(value => roomDic[value].find( value2 => value2.startsWith(oldPath)));
@@ -706,7 +825,7 @@ function deleteCVHelper(foundDir,req)
 }
 // Delete a directory
 router.delete('/', authenticateToken, (req, res) => {
-    var { path,parentPath } = req.query;
+    var { path, parentPath } = req.query;
    
     console.log("Deleting directory at path: ", decodeURIComponent(path)); 
     console.log("Deleting a directory with parent path: ", decodeURI(parentPath)); 
@@ -714,7 +833,18 @@ router.delete('/', authenticateToken, (req, res) => {
     parentPath = decodeURIComponent(parentPath);
     const directories =  mapDirectory("./",parentPath,"",req);
     console.log(directories? Object.entries(directories):"No directories found");
-    
+    let stack = [...directories.subdirectories];
+    while(stack.length > 0)
+    {
+        let subdir = stack.shift();
+        if(req.app.locals.archives.find(value=> path.join("./",subdir.path).includes(value) ))
+        {
+            res.status(400).json({message:"Ce répertoire contient un dossier archivé. Vous ne pouvez pas le supprimer."});
+            stack.splice(0,stack.length);
+            return;
+        }
+        stack.push(...subdir.subdirectories);
+    }
     const removeDirectory = (dirs) => {
      
         const foundDir = recursiveFindDir(dirs,path);
@@ -728,6 +858,22 @@ router.delete('/', authenticateToken, (req, res) => {
                 var command = {entryparams:{fieldName:"directories",operation:"delete_directory"}
                     ,command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
                 roomUpdates(req,path,command);
+                
+                let foundChangesInPartnersDic = false;
+                let updatedDic = Object.fromEntries(
+                    Object.entries(req.app.locals.partnersDic).map(([key, value]) =>{ 
+                            let newValue = value.filter(val => !val.path.includes(path) || !val.parentPath.includes(path));
+                            if(newValue.length != value.length)
+                                foundChangesInPartnersDic = true;
+                            return [key, newValue]; 
+                        }
+                    )
+                );
+                if(foundChangesInPartnersDic)
+                {
+                    req.app.locals.partnersDic = updatedDic;
+                    fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
+                }
                 if(foundDir.parentPath == "principal" && req.app.locals.departements.findIndex(value=> value == foundDir.name) >= 0)
                 {
                     req.app.locals.departements.splice(req.app.locals.departements.findIndex(value=> value == foundDir.name),1);

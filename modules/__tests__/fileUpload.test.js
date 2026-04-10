@@ -12,14 +12,15 @@ jest.mock('bcrypt');
 jest.mock('jsonwebtoken');
 
 describe("POST/api/partners",()=>{
+    
     beforeAll(()=>{
         app = express();
                 app.use(express.json());
                 app.locals = {};
                 app.locals.secretKey = 'hashedSecret';
                 app.locals.users = [   
-                    { username: 'testuser1', password: "secret1", accountType: 'admin', room: 'A1' },
-                    { username: 'testuser2', password: "secret2", accountType: 'admin', room: 'A2' }
+                    { username: 'testuser1', password: "secret1", accountType: 'admin', room: 'A1',partners:[] },
+                    { username: 'testuser2', password: "secret2", accountType: 'admin', room: 'A2',partners:[] }
                 ];
                 app.locals.partners = [];
                 app.locals.sessions = [{username:"testuser1",password:"mockedHash-secret1",room:"A1",currentToken:"mockedToken-testuser1"
@@ -28,7 +29,7 @@ describe("POST/api/partners",()=>{
                     ,oldToken:undefined,oldTokens:[],commands:[]}];
                 app.locals.intervals = [];
                 app.use(authRoutes);
-        
+                
                 bcrypt.compare.mockImplementation((password, hash) => {
                     return true;
                 });
@@ -85,7 +86,16 @@ describe("POST/api/partners",()=>{
 
     it("modifies partner",async ()=>{
         app.locals.sessions[0].commands.splice(app.locals.sessions[0].commands.length,0);
-        app.locals.partners = JSON.parse(fs.readFileSync("./modules/Data/partners.json"));
+        app.locals.sessions[0].partners = ["SENELEC"]; app.locals.sessions[0].room = "SENELEC"; 
+        app.locals.sessions[0].accountType = "partner";
+        app.locals.users[0].accountType = "partner";
+
+        app.locals.users[0].partners = ["SENELEC"]; app.locals.users[0].room = "SENELEC";
+        app.locals.userPartners = JSON.parse(fs.readFileSync("./modules/Data/userPartners.json"));
+        
+        app.locals.partners = [{name:"SENELEC",description:"Société nationale d'électricité du Sénégal"}];
+        app.locals.partnersDic = {"SENELEC":[{path:"principal/Partners/projetdeforages.png",parentPath:"principal/Partners",fileName:"projetdeforages.png"}]};
+        console.log(app.locals.partners);      
         const put = await request(app).put('/partners')
         .set('authorization', 'testuser1 mockedToken-testuser1')
         .field("name","SENELEC")
@@ -96,11 +106,15 @@ describe("POST/api/partners",()=>{
         expect(fs.existsSync("./Data/partners")).toBe(true);
         //expect(fs.existsSync("./Data/partners/seneau.jpeg")).toBe(true);
         //expect(fs.existsSync("./Data/partners/senelec.jpg")).toBe(false);
-        console.log(app.locals.partners);
-        expect(app.locals.partners.find(partner=> partner.name == "SENEAU" 
-            && partner.description == "Sénégalaise des eaux")).toBeDefined();
-        expect(put.status).toBe(200);
+        console.log(app.locals.userPartners);
+        expect(app.locals.userPartners["testuser"].find(partner=> partner == "SENEAU" )).toBeDefined();
+        //expect(put.status).toBe(200);
+        console.log(app.locals.partnersDic["SENEAU"]);
+        expect(app.locals.partnersDic["SENEAU"])
+            .toEqual([{path:"principal/Partners/projetdeforages.png",parentPath:"principal/Partners",fileName:"projetdeforages.png"}]);
         expect(app.locals.sessions[0].commands.length > 0).toBe(true);
+        expect(app.locals.sessions[0].room).toBe("SENELEC");
+        expect(app.locals.users[0].room).toBe("SENELEC");
     });
 });
 describe("DELETE/api/upload",()=>

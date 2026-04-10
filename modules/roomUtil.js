@@ -7,7 +7,51 @@ function allRoomUpdated(req,command)
     {
         session.commands.push(command);
     });
+}   
+function updateRoomandSessionofHostPartnerUser(req,name,newName){
+    req.app.locals.sessions = req.app.locals.sessions.map(session => {
+        if( (session.accountType == "host" || session.accountType == "partner") && session.room.startsWith(name))
+        {
+            session.room = session.room.replace(name,newName);
+        }
+        return session;
+    });
+
+    req.app.locals.users = req.app.locals.users.map(user => {
+        if( (user.accountType == "host" || user.accountType == "partner") && user.room.startsWith(name))
+        {
+            user.room = user.room.replace(name,newName);
+        }
+        return user;
+    });
 }
+function partnerRoomUpdates(req,partnerName,command)
+{
+    req.app.locals.users.filter(user=>{
+        user.partners.find(partner => partner == partnerName);
+    }).forEach(user => {
+        req.app.locals.sessions.filter(session => session.username == user.username).forEach(session => {
+            session.commands.push(command);
+        });
+    });
+}
+function updateRoomsAndSessions(req,oldPath,newPath)
+{
+    req.app.locals.sessions = req.app.locals.sessions.map(session => {
+        if( (session.accountType !== "host" && session.accountType !== "partner") && session.room.startsWith(oldPath))
+        {
+            session.room = session.room.replace(oldPath,newPath);
+        }
+        return session;
+    });
+    req.app.locals.users = req.app.locals.users.map(user => {
+        if( (user.accountType !== "host" && user.accountType !== "partner") && user.room.startsWith(oldPath))
+        {
+            user.room = user.room.replace(oldPath,newPath);
+        }
+        return user;
+    });
+}        
 function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=undefined)
 {
     //console.log(req.app.locals.roomDic);
@@ -83,4 +127,5 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
      console.log("Looking for a session for additionalCommand***************");
 }
 
-module.exports = {roomUpdates,allRoomUpdated};
+
+module.exports = {roomUpdates,allRoomUpdated,partnerRoomUpdates,updateRoomandSessionofHostPartnerUser,updateRoomsAndSessions};

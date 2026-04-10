@@ -206,11 +206,78 @@ router.delete('/signup',authenticateToken ,async (req, res) => {
   res.status(200).json({ message: "L'utilisateur a été enlevé sans problèmes." });
 
 });
+router.delete('/partner',authenticateToken, (req, res) => {
+  const {name} = req.body;
+  if(req.app.locals.userPartners[req.user.username])
+  {
+      const index = req.app.locals.userPartners[req.user.username].findIndex(element => element == name);
+      if(index >= 0)    
+      {
+        req.app.locals.userPartners[req.user.username].splice(index,1);
+        try
+        {
+          fs.writeFileSync("./modules/Data/userPartners.json",JSON.stringify(req.app.locals.userPartners));  
+        }
+        catch(err)
+        {
+            res.status(500).json({message:err});
+            return;
+        }
+      }
+  }
+  res.status(200).json({message:"Partenaire enlevé avec succès"});
+});
+router.post('/partner',authenticateToken, (req, res) => {
+  const {name} = req.body;
+  if(!name)
+  {
+    res.status(400).json({message:"Aucun partenaire fourni"});
+    return;
+  } 
+  if(req.app.locals.userPartners[req.user.username])
+  {
+    if(!req.app.locals.userPartners[req.user.username].find(element => element == name))
+      req.app.locals.userPartners[req.user.username].push(name);
+  }
+  else
+  {
+      req.app.locals.userPartners[req.user.username] = [name];
+  }
+  
+  try
+  {
+      console.log("Writting user partners to file");
+      fs.writeFileSync("./modules/Data/userPartners.json",JSON.stringify(req.app.locals.userPartners));
+  }
+  catch(err)
+  {
+    console.trace(err);
+    res.status(500).json({message:err});
+    return;
+  }
 
+
+  try
+  {
+    console.log("Updating rooms for new partner addition");
+    var command ={entryparams:{fieldName:"partners",operation:"add_user_partner"},
+    command:{name}};
+    roomUpdates(req,req.user.room,command);
+  }
+  catch(err)
+  {
+    res.status(500).json({message:err});
+    console.trace(err);
+    return;
+  }
+
+  res.status(200).json({message:"Partenaire ajouté avec succès"});
+
+});
 router.post('/signup', async (req, res) => {
-  const { imgSource ,name, username, password,room
+  const { imgSource ,name, username, password, room
     ,identifier,accessType,accessPassword
-    ,admin,secretAdminAccountPassword,email } = req.body;
+    ,admin,secretAdminAccountPassword,email,guestFlag,guest } = req.body;
   
   //console.log(req.body);
   //console.log(req.app.locals);
@@ -225,12 +292,16 @@ router.post('/signup', async (req, res) => {
     console.log(admin && req.app.locals.secretAdminAccountKey != secretAdminAccountPassword);
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer un compte d'administrateur." });
   }
-  else if(!(admin && req.app.locals.secretAdminAccountKey == secretAdminAccountPassword)
+  else if(guestFlag && guest != "host" && guest != "partner")
+  {
+    return res.status(400).json({ message: "Type d'invité non valide." });
+  }
+  else if(!guestFlag && !(admin && req.app.locals.secretAdminAccountKey == secretAdminAccountPassword)
     && (accessType && accessType == "secret" && req.app.locals.secretPassword != accessPassword))
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer ce un compte secret." });
   }
-  else if (!(admin && req.app.locals.secretAdminAccountKey == secretAdminAccountPassword)
+  else if (!guestFlag && !(admin && req.app.locals.secretAdminAccountKey == secretAdminAccountPassword)
     && (!accessType || accessType == "basic") && req.app.locals.secretPassword != accessPassword)
   {
     return res.status(400).json({ message: "Vous n'êtes pas permis de créer un compte basique." });
@@ -244,7 +315,7 @@ router.post('/signup', async (req, res) => {
   // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
   const newUser = { imgSource,name,username,email, password: hashedPassword,room:room
-    ,identifier,accountType:admin?"admin":"user",type:admin?"secret":accessType };
+    ,identifier,accountType:guestFlag?guest:admin?"admin":"user",date:new Date(Date.now()),type:guestFlag?guest:admin?"secret":accessType };
   
   if(email)
   {
@@ -385,7 +456,7 @@ const loginHandler = async (req, res) => {
   const newSession = {date:new Date(Date.now()), username:username, password:password,
     currentToken : token, oldToken: previousToken,oldTokens:[previousToken,...foundSession?.oldTokens ?? []].filter(content=> content),
     type: user.type?user.type:user.accountType == "admin"?"secret":"basic",
-    accountType:user.accountType,room: user.room,hasFinished:false,useragent:req.useragent,commands:[]};
+    accountType:user.accountType,room: user.room,hasFinished:false,useragent:req.useragent,commands:[],partners:req.app.locals.userPartners[username]?? []};
 /*console.log("************BEFORE************");
     console.log(req.app.locals.sessions);
   console.log("**********BEFORE**************");*/

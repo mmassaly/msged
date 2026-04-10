@@ -6,11 +6,11 @@ const directoryRoutes = require('./modules/directory');
 const authentificationRoutes = require('./modules/authentification');
 const updateRoutes = require('./modules/update');
 const retrievalRoutes = require('./modules/retrievals').router;
-
 const fs = require('fs');
 
 process.env.LANG = 'fr_FR.UTF-8';
 dotenv.config();
+
 const app = express(); 
 const PORT = process.env.PORT || 3039;
 
@@ -21,7 +21,6 @@ app.locals.secretKey = process.env.JWT_SECRET;
 app.locals.secretAdminAccountKey = process.env.SECRET_ADMIN_ACCOUNT_KEY;
 app.locals.secretPassword = process.env.SECRET_PASSWORD;
 app.locals.intervals = [];
-
 
 const usersStr = directoryRoutes.readFile("./modules/Data/users.json");
 if(usersStr !== undefined)
@@ -99,6 +98,22 @@ if(partnersStr !== undefined)
 }
 else
     app.locals.partners = [];
+
+const partnersDicStr = directoryRoutes.readFile("./modules/Data/partnersDic.json");
+if(partnersDicStr !== undefined)
+{
+    app.locals.partnersDic = JSON.parse(partnersDicStr);
+}
+else
+    app.locals.partnersDic = {};
+
+const userPartnersStr = directoryRoutes.readFile("./modules/Data/userPartners.json");
+if(userPartnersStr !== undefined)
+{
+    app.locals.userPartners = JSON.parse(userPartnersStr);
+}
+else
+    app.locals.userPartners = {};
 
 app.use(cors({
     origin: "*",

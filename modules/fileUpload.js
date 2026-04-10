@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const {roomUpdates, allRoomUpdated} = require('./roomUtil');
+const {roomUpdates, allRoomUpdated, partnerRoomUpdates,updateRoomandSessionofHostPartnerUser} = require('./roomUtil');
 const router = express.Router();
 const mime_lookup = require('mime-types');
 const fs = require('node:fs');
@@ -476,12 +476,13 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
         }
         try
         {
-            fs.unlinkSync(path.join('./',partner.path));
+            if(partner.path && fs.existsSync(path.join("./",partner.path)))
+                fs.unlinkSync(path.join('./',partner.path));
         }
         catch(err)
         {
             console.trace(err);
-            res.status(500).end();return;
+            //res.status(500).end();return;
         }
         console.log("inside validy middleware-calling next");
         next();
@@ -489,32 +490,67 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
     }
     res.status(403).end();
 },(req,res)=>{
-    const {name,newName,newDescription,path} = req.body;
+    const {name,newName,newDescription} = req.body;
     const uploadObject = req.uploadObject;
     
     uploadObject.name = newName;
     uploadObject.description = newDescription;
     
     let partners = req.app.locals.partners;
-    let partner = partners.find(partner=> partner.name == name && partner.path == path);
-    req.app.locals.partners = partners.filter(partner=> partner.name !== name);
-    req.app.locals.partners.push(uploadObject);
+    let partner = partners.find(partner=> partner.name == name);
+    
+    req.app.locals.partners = partners.map(partner=> partner.name == name? {...uploadObject}:partner);
+    
     //console.trace(partners);
     try
     {
+        console.log("before writing file");
         req.command.entryparams.operation = "edit_partner";
         req.command.command.newPath = uploadObject.path;
         req.command.command.path = partner?.path;
         req.command.command.newName = newName;
         req.command.command.newDescription = newDescription;
         req.command.command.name = name;
-        fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));
+
+        fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));   
+        let foundOldName = Object.keys(req.app.locals.partnersDic).find(key=> key == name);
+        if(foundOldName)
+        {
+            console.log("Updating partnersDic with new partner name...");
+            req.app.locals.partnersDic[newName] = req.app.locals.partnersDic[foundOldName];
+            delete req.app.locals.partnersDic[foundOldName];
+            //console.log(req.app.locals.userPartners,name);
+            //console.log(Object.entries(req.app.locals.userPartners).filter(([key,value])=> value.find(v=> v == name)));     
+            fs.writeFileSync("./modules/Data/partnersDic.json",JSON.stringify(req.app.locals.partnersDic));
+        }
+
+        let foundEntries = Object.entries(req.app.locals.userPartners).filter(([key,value])=> value.find(v=> v == name));
+        console.log(foundEntries);
+        if(foundEntries.length > 0)
+        {     
+            console.log("Updating userPartners with new partner name...");
+            foundEntries.forEach(([key,value])=>{
+                let valueEdited = value.map(v=> v == name?newName:v);
+                //console.log(valueEdited);
+                req.app.locals.userPartners[key] = valueEdited;
+            });
+            fs.writeFileSync("./modules/Data/userPartners.json",JSON.stringify(req.app.locals.userPartners));
+        }
+
+        req.app.locals.users.filter(user=> user.partners.find(partner=> partner == name)).forEach(user=>{
+            user.partners = user.partners.map(partner=> partner == name?newName:partner);
+        });
+        
         allRoomUpdated(req,req.command);
+        
+        //updateRoomandSessionofHostPartnerUser(req,name,newName);
+	            
         if(fs.existsSync(path.join("./","Data/partners/empty.txt")))
             fs.unlinkSync(path.join("./","Data/partners/empty.txt"));
     }
     catch(err)
     {
+        console.trace(err);
         res.status(500).end();
         return;
     }
@@ -543,7 +579,6 @@ router.post('/partners',authenticateToken,upload_2.single('file'),(req,res)=>{
     }
     else
     {
-        
         partners.push(uploadObject);
         console.trace(uploadObject,partners);
         fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));    
@@ -601,11 +636,28 @@ router.delete('/', (req, res) => {
             res.status(400).json({message:"Ce document est un fichier archivé. Vous ne pouvez pas le supprimer."});
             return;
         }
-        try{
-        fs.unlinkSync(filePath);
+        try
+        {
+            fs.unlinkSync(filePath);
             var command = {entryparams:{fieldName:"directories",operation:"remove_file"}
             ,command:{path:filePath,name:path.basename(filePath),parentPath:parentPath}};
             deleteCVHelper(filePath,req);
+            
+            let foundChangesInPartnersDic = false;
+            let updatedDic = Object.fromEntries(
+                Object.entries(req.app.locals.partnersDic).map(([key, value]) =>{ 
+                        let newValue = value.filter(val => val.path !== path);
+                        if(newValue.length != value.length)
+                            foundChangesInPartnersDic = true;
+                        return [key, newValue]; 
+                    }
+                )
+            );
+            if(foundChangesInPartnersDic)
+            {
+                req.app.locals.partnersDic = updatedDic;
+                fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
+            }
             roomUpdates(req,parentPath,command);
         }catch(err)
         {

@@ -49,7 +49,116 @@ jest.mock("node-fetch");
 //         expect(res.statusCode).toBe(200);
 //     });
 // });
+describe('POST and delete /partner',()=>{
+    let app;
+    beforeAll(()=>{
+        app = express();
+        app.use(express.json());
+        app.locals.users = [
+            { username: 'testuser', password: 'hashedpass', accountType: 'admin', room: 'A1' },
+            { username: 'testuser2', password: 'hashedpass2', accountType: 'admin', room: 'A1' }
+        ];
+        app.locals.sessions = [{ username: 'testuser', password: 'hashedpass',currentToken: 'accountToken',accountType: 'admin', room: 'A1',commands:[] },
+        ];
+        app.locals.roomDic = {'A1':['A1']};
+        app.locals.intervals = [];
+        app.locals.partnersDic = {"ICECREAMSSHOP1":[{"name":"RICOU","path":"principal/Administration/RICOU.png"}
+                                ,{"name":"ICECONE","path":"principal/Administration/ICECONE.png"}]};
+        app.locals.userPartners = {"testuser": ["ICECREAMSSHOP1"]};
+        app.locals.partners = [{"name":"RICOU","path":"principal/Administration/RICOU.png"},
+            {"name":"ICECONE","path":"principal/Administration/ICECONE.png"}];
+        app.use(authRoutes);
+        
+        bcrypt.compare.mockImplementation((password, hash) => {
+            return true;
+        });
 
+        jwt.verify.mockImplementation((token, secret,callback)=>
+        {
+            callback(null, token == "accountToken"?app.locals.sessions[0]:undefined); // simulate successful verification
+        });
+
+    });
+
+    it('should return 200 and token for valid partner addition',async ()=>{
+        const partner = {name:"RICOU",path:"principal/Administration/RICOU.png"};
+        const res = await request(app).post('/partner')
+        .set('Authorization', 'testuser accountToken')
+        .set('Content-Type', 'application/json')
+        .send(partner);
+        expect(res.statusCode).toBe(200);
+        expect(app.locals.userPartners["testuser"].find(element => element == partner.name )).toBeDefined();
+    });
+    it('should return 200 and token for valid partner deletion',async ()=>{
+        const partner = {name:"RICOU",path:"principal/Administration/RICOU.png"};
+        const res = await request(app).delete('/partner')
+        .set('Authorization', 'testuser accountToken')
+        .set('Content-Type', 'application/json')
+        .send(partner);
+        expect(res.statusCode).toBe(200);
+        expect(app.locals.userPartners["testuser"].find(element => element == partner.name)).toBeUndefined();
+    });    
+});
+
+describe('POST /signup of a host and of a partner',()=>{
+    let app;
+    beforeEach(()=>{
+        app = express();
+        app.use(express.json());
+        app.locals.users = [];
+        app.locals.roomDic = {};
+        app.locals.sessions = [];
+        app.locals.intervals = [];
+        app.use(authRoutes);
+        bcrypt.compare.mockImplementation((password, hash) => {
+            return true;
+        });
+        
+        jwt.sign.mockImplementation((payload, secret, options)=>{
+            return "mockedToken-"+payload.username;
+        });
+
+    });
+
+    it('should return 200 and token for valid host signup',async ()=>{    
+        let postSignup = await request(app).post('/signup').set('Authorization', 'testuser accountToken')
+        .set("Content-Type","application/json").send({
+            name:"TEST HOST",
+            username:"testuserHOST",
+            identifier:"Mr.",
+            password:"secret",
+            room:"SENELEC",
+            guest:"host",
+            guestFlag:true
+        });
+        
+        if(postSignup.header['content-type'].includes("application/json"))
+            console.log(postSignup.body);
+ 
+        expect(postSignup.statusCode).toBe(200);
+        expect(app.locals.users[app.locals.users.length - 1].username).toBe("testuserHOST");
+        expect(app.locals.users[app.locals.users.length - 1].room).toBe("SENELEC");
+        
+    });
+
+    it('should return 200  for valid partner signup',async ()=>{    
+        let postSignup = await request(app).post('/signup').set('Authorization', 'testuser accountToken')
+        .set("Content-Type","application/json").send({
+            name:"TEST PARTNER",
+            username:"testuserPARTNER",
+            identifier:"Mr.",
+            password:"secret",
+            room:"SENELEC",
+            guest:"partner",
+            guestFlag:true
+        });
+        if(postSignup.header['content-type'].includes("application/json"))
+            console.log(postSignup.body);
+        expect(postSignup.statusCode).toBe(200);
+        expect(app.locals.users[app.locals.users.length - 1].username).toBe("testuserPARTNER");
+        expect(app.locals.users[app.locals.users.length - 1].room).toBe("SENELEC");
+    });
+});
 describe ('POST /QRauthentification ', () => {
     let app;
     beforeEach(()=>{    
