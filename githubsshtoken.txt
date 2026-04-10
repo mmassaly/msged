@@ -1,4 +1,4 @@
-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
+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
 
 git pull https://<username>:<token>@github.com/<username>/<repo>.git
 
