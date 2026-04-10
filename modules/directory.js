@@ -149,6 +149,35 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+const authenticateTokenPath = (req, res, next) => {
+    const {authHeader} = req.params;
+    //console.log(req.headers);
+    const token = authHeader && authHeader.split(' ')[1];
+    const userName = authHeader && authHeader.split(' ')[0];
+    if (token == undefined) return res.sendStatus(401);
+    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
+    if(!yourSession)
+    {
+        res.sendStatus(403);//json({ message: 'Invalid username' });;
+        return;
+    } 
+
+    if(req.method != "GET" && (yourSession.accountType === "partner" || yourSession.accountType === "host" || 
+        (yourSession.accountType !== "admin" && yourSession.accountType !== "user" )) )
+    {
+        res.status(403).json({ message: 'Unauthorized to perform this action' });
+        return;
+    }
+    jwt.verify(token, req.app.locals.secretKey, (err, user) => {
+        if (err){ 
+            return res.sendStatus(403);
+        }//json({ message: 'Token not matched' });;
+        req.user = user;
+        req.session = yourSession;
+        next();
+    });
+};
+
 router.get('/CV',authenticateToken,(req,res)=>{
     res.json({cvDirs:req.app.locals.cvDirs,cvDetailed:req.app.locals.cvs});
 });
@@ -352,6 +381,26 @@ router.get('/', authenticateToken, (req, res) => {
     //console.log(req.app.locals.roomDic);
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     res.json(directories? directories: {message:"Pas de dossier trouvé"});
+});
+router.get("/file/:authHeader/:filePath",authenticateTokenPath,(req,res)=>{
+    const filePath = path.join('./',decodeURIComponent(req.params.filePath));
+    const mimeType = mime.lookup(filePath);
+    console.log(mimeType);
+    //mime.getType(filePath) causes issues
+    //res.setHeader({'Content-Type':mimeType}); //causes issues in clients view
+    res.set('Content-Type',mimeType);
+    res.set('Content-Length',readSize(filePath));
+    console.log(filePath);
+    /*
+    res.write(readFile(filePath));
+    res.end();*/
+    const readStream = readFile2(filePath);
+    if(readStream)
+        readStream.pipe(res);
+    else{
+            console.log(`File ${filePath} not found.`);
+            res.end();
+        }
 });
 router.get('/file', authenticateToken, (req, res) => {
    const filePath = path.join('./',decodeURIComponent(req.query.path));
