@@ -382,8 +382,8 @@ router.get('/', authenticateToken, (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     res.json(directories? directories: {message:"Pas de dossier trouvé"});
 });
-router.get("/file/:authHeader/:filePath",authenticateTokenPath,(req,res)=>{
-    const filePath = path.join('./',decodeURIComponent(req.params.filePath));
+router.get("/file/:authHeader/*",authenticateTokenPath,(req,res)=>{
+    const filePath = path.join('./',decodeURIComponent(req.params[0]));
     const mimeType = mime.lookup(filePath);
     console.log(mimeType);
     //mime.getType(filePath) causes issues
