@@ -395,8 +395,10 @@ router.get("/file/:authHeader/*",authenticateTokenPath,(req,res)=>{
     res.write(readFile(filePath));
     res.end();*/
     const readStream = readFile2(filePath);
-    if(readStream)
+    if(readStream){
+        console.log(`sending ${filePath}...`);
         readStream.pipe(res);
+    }
     else{
             console.log(`File ${filePath} not found.`);
             res.end();
