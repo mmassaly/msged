@@ -721,6 +721,7 @@ router.delete("/partnerFile",authenticateToken,(req,res)=>{
 router.post('/partnerFile', authenticateToken, (req, res) => {
     
     const {name,path,parentPath,fileName} = req.body;
+    console.log(req.body);
     try
     {
         console.log("Begin of stuff");
@@ -749,7 +750,6 @@ router.post('/partnerFile', authenticateToken, (req, res) => {
     try
     {
         console.log("Parent path: " + parentPath);
-        
         var command = {entryparams:{fieldName:"directories",operation:"add_partner_directory"},
         command:{path:path,name:name,isDirectory:true,parentPath: parentPath,isPartner:true,fileName}};
         partnerRoomUpdates(req,name,command);
