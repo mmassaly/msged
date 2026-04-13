@@ -538,7 +538,7 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
         }
 
         req.app.locals.users.filter(user=> user.partners.find(partner=> partner == name)).forEach(user=>{
-            user.partners = user.partners.map(partner=> partner == name?newName:partner);
+            user.partners =  user.partners?user.partners.map(partner=> partner == name?newName:partner):undefined;
         });
         
         allRoomUpdated(req,req.command);

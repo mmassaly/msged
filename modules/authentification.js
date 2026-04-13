@@ -133,7 +133,11 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   
   console.log("Writting to file ");
    console.log(req.app.locals.users);
-  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users.map(user => {
+    let newUser = user;
+    delete newUser["partners"];
+    return newUser;
+  })));
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
   command:{oldUser, newUser}};
          
@@ -199,7 +203,11 @@ router.delete('/signup',authenticateToken ,async (req, res) => {
     if(foundValueIndex >= 0)
   {
     req.app.locals.users.splice(foundValueIndex,1);
-    const users = JSON.stringify(req.app.locals.users);
+    const users = JSON.stringify(req.app.locals.users.map(user => {
+      let newUser = user;
+      delete newUser["partners"];
+      return newUser;
+    }));
     fs.writeFileSync("./modules/Data/users.json",users);
   }     
   roomUpdates(req,room,command);
@@ -315,7 +323,7 @@ router.post('/signup', async (req, res) => {
   // Hash the password
   const hashedPassword = await bcrypt.hash(password, 10);
   const newUser = { imgSource,name,username,email, password: hashedPassword,room:room
-    ,identifier,accountType:guestFlag?guest:admin?"admin":"user",date:new Date(Date.now()),type:guestFlag?guest:admin?"secret":accessType };
+    ,identifier,accountType:guestFlag?guest:admin?"admin":"user",date:new Date(Date.now()),type:guestFlag?guest:admin?"secret":accessType,partners:[]};
   
   if(email)
   {
@@ -324,7 +332,11 @@ router.post('/signup', async (req, res) => {
   // Store user
   req.app.locals.users.push(newUser);
   const users = JSON.stringify(req.app.locals.users);
-  fs.writeFileSync("./modules/Data/users.json",users);
+  fs.writeFileSync("./modules/Data/users.json",users.map(user => {
+    let newUser = user;
+    delete newUser["partners"];
+    return newUser;
+  }));
   var command ={entryparams:{fieldName:"user_info",operation:"add_user_info"},
    command:newUser};
          
@@ -389,7 +401,11 @@ const generateQRCode =   async (req, res) => {
       try{
         const secret = totp.generateSecret(user.username);
         user.secret = secret;
-        fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+        fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users.map(user => {
+          let newUser = user;
+          delete newUser["partners"];
+          return newUser;
+        })));
         totp.generateQRCode(secret).then(html => { console.log("valid html returns",html);return res.status(200).send(html)})
         .catch(err => {console.log("invalid html returns",err);return res.status(200).send(err);});
         const oldUser = req.app.locals.users.find(user => user.username == user.username);

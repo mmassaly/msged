@@ -28,7 +28,7 @@ function updateRoomandSessionofHostPartnerUser(req,name,newName){
 function partnerRoomUpdates(req,partnerName,command)
 {
     req.app.locals.users.filter(user=>{
-        user.partners.find(partner => partner == partnerName);
+        user.partners && user.partners.find(partner => partner == partnerName);
     }).forEach(user => {
         req.app.locals.sessions.filter(session => session.username == user.username).forEach(session => {
             session.commands.push(command);

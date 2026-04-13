@@ -71,6 +71,7 @@ const cvsDirFoldersStr = directoryRoutes.readFile('./modules/Data/cvFolders.json
 if(cvsDirFoldersStr !== undefined)
 {
     app.locals.cvDirs = JSON.parse(cvsDirFoldersStr);
+    
 }
 else
     app.locals.cvDirs = [];
@@ -111,6 +112,11 @@ const userPartnersStr = directoryRoutes.readFile("./modules/Data/userPartners.js
 if(userPartnersStr !== undefined)
 {
     app.locals.userPartners = JSON.parse(userPartnersStr);
+    app.locals.users = app.locals.users.map(user=> {
+        let newUser = user;
+        newUser.partners = app.locals.userPartners[user.username] ? app.locals.userPartners[user.username] : [];
+        return newUser; 
+    })
 }
 else
     app.locals.userPartners = {};
