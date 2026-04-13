@@ -748,10 +748,11 @@ router.post('/partnerFile', authenticateToken, (req, res) => {
     
     try
     {
+        console.log("Parent path: " + parentPath);
+        
         var command = {entryparams:{fieldName:"directories",operation:"add_partner_directory"},
         command:{path:path,name:name,isDirectory:true,parentPath: parentPath,isPartner:true,fileName}};
         partnerRoomUpdates(req,name,command);
-        console.log(parentPath);
         roomUpdates(req,parentPath,command);
     }
     catch(err)    
