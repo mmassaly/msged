@@ -40,7 +40,7 @@ function mapDirectoryorFileUtil(pathPrefix,folderPath,parentPath,req,start,passe
       isCV: req?req.app.locals.cvDirs.find(value=>path.join(parentPath,folderPath).startsWith(value))?true:false:false,
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
       partners:req.app.locals.partnersDicReverse?req.app.locals.partnersDicReverse[path.join(parentPath,folderPath)]:[],
-      subdirectoriWes: []
+      subdirectories: []
     };
     
     if (mappedDirectory.isDirectory)
