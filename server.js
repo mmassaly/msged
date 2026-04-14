@@ -119,7 +119,7 @@ else
 
 if(Object.keys(app.locals.partnersDicReverse).length == 0)
 {
-    Object.entries(app.locals.partnersDic).map(([key,value])=> ({[value.fileName]:app.locals.partners.find(partner=> partner.name ==key)}));
+    app.locals.partnersDicReverse = Object.entries(app.locals.partnersDic).map(([key,value])=> ({[value.fileName]:app.locals.partners.find(partner=> partner.name ==key)}));
 }
 console.trace(app.locals.partnersDicReverse);
 const userPartnersStr = directoryRoutes.readFile("./modules/Data/userPartners.json");
