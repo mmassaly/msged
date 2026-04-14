@@ -108,6 +108,20 @@ if(partnersDicStr !== undefined)
 else
     app.locals.partnersDic = {};
 
+
+const partnersDicReverseStr = directoryRoutes.readFile("./modules/Data/partnersDicReverse.json");
+if(partnersDicReverseStr !== undefined)
+{
+    app.locals.partnersDicReverse = JSON.parse(partnersDicReverseStr);
+}
+else
+    app.locals.partnersDicReverse = {};
+
+if(Object.keys(app.locals.partnersDicReverse).length == 0)
+{
+    Object.entries(app.locals.partnersDic).map(([key,value])=> ({[value.fileName]:app.locals.partners.find(partner=> partner.name ==key)}));
+}
+
 const userPartnersStr = directoryRoutes.readFile("./modules/Data/userPartners.json");
 if(userPartnersStr !== undefined)
 {
@@ -116,7 +130,7 @@ if(userPartnersStr !== undefined)
         let newUser = user;
         newUser.partners = app.locals.userPartners[user.username] ? app.locals.userPartners[user.username] : [];
         return newUser; 
-    })
+    });
 }
 else
     app.locals.userPartners = {};

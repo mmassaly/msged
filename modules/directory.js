@@ -39,7 +39,8 @@ function mapDirectoryorFileUtil(pathPrefix,folderPath,parentPath,req,start,passe
       isArchived: req?req.app.locals.archives.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
       isCV: req?req.app.locals.cvDirs.find(value=>path.join(parentPath,folderPath).startsWith(value))?true:false:false,
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
-      subdirectories: []
+      partners:req.app.locals.partnersDicReverse?req.app.locals.partnersDicReverse[path.join(parentPath,folderPath)]:[],
+      subdirectoriWes: []
     };
     
     if (mappedDirectory.isDirectory)
@@ -722,11 +723,21 @@ router.post('/partnerFile', authenticateToken, (req, res) => {
     
     const {name,path,parentPath,fileName} = req.body;
     console.log(req.body);
+    
+    //attach file to partner name store object into partnerDicReverse.json
+    //attach partner to filePath store value into partnerDicReverse.json
+    //notify rooms higerEqual to path of file using roomUpdates
+    //notify partner rooms using roomUpdates
+    
     try
     {
         console.log("Begin of stuff");
         req.app.locals.partnersDic[name] = req.app.locals.partnersDic[name]?[...req.app.locals.partnersDic[name],{path,parentPath,fileName}]:
                                         [{path,parentPath,fileName}];
+        const foundPartner = req.app.locals.partners.find(partner=> partner.name == name);
+        req.app.locals.partnersDicReverse[path] = req.app.locals.partnersDicReverse[path]?[...req.app.locals.partnersDicReverse[path],{...foundPartner}]:
+                                        [{...foundPartner}];
+                                        
     }
     catch(err)    {
         console.log(err);
@@ -741,12 +752,15 @@ router.post('/partnerFile', authenticateToken, (req, res) => {
             fs.mkdirSync('./modules/Data', { recursive: true });
         }
         fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
+        writeFile('./modules/Data/partnersDicReverse.json',req.app.locals.partnersDicReverse);
+        //mapDirectory("./",path,"",req);
+        mapDirectoryorFileUtil("./",path,"",req,undefined,true);
     }
-    catch(err)    {
+    catch(err)    
+    {
         console.log(err);
         res.status(500).json({message:err});
     }
-    
     try
     {
         console.log("Parent path: " + parentPath);
