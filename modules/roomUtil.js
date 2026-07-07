@@ -7,7 +7,27 @@ function allRoomUpdated(req,command)
     {
         session.commands.push(command);
     });
+}
+
+function allRoomUpdatedTypePartner(req,command,partner)
+{
+    req.app.locals.sessions.forEach(session => 
+    {
+        if((session.accountType == "host" || session.accountType == "partner") && 
+            (session.room.startsWith(command.command.newName) || req.app.locals.userPartners[session.username].find(apartner=> apartner == partner )))
+            session.commands.push(command);
+    });
+}
+
+function allRoomUpdatedExcludeTypePartner(req,command)
+{
+    req.app.locals.sessions.forEach(session => 
+    {
+        if((session.accountType != "host" && session.accountType != "partner"))
+            session.commands.push(command);
+    });
 }   
+
 function updateRoomandSessionofHostPartnerUser(req,name,newName){
     req.app.locals.sessions = req.app.locals.sessions.map(session => {
         if( (session.accountType == "host" || session.accountType == "partner") && session.room.startsWith(name))
@@ -106,6 +126,7 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
                 }
                 
                 session.commands.push(command);
+                console.trace(session.commands);
                 if ( command.isAdditionalCommand )
                     console.log("Found session with room "+session.room);
             }
@@ -128,4 +149,5 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
 }
 
 
-module.exports = {roomUpdates,allRoomUpdated,partnerRoomUpdates,updateRoomandSessionofHostPartnerUser,updateRoomsAndSessions};
+module.exports = {roomUpdates,allRoomUpdated,partnerRoomUpdates,updateRoomandSessionofHostPartnerUser
+                            ,allRoomUpdatedExcludeTypePartner,updateRoomsAndSessions,allRoomUpdatedTypePartner};

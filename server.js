@@ -34,7 +34,7 @@ const roomDicStr = directoryRoutes.readFile("./modules/Data/roomDic.json");
 if(roomDicStr !== undefined)
 {
     app.locals.roomDic = JSON.parse(roomDicStr);
-    console.log(app.locals.roomDic);
+    ////console.log(app.locals.roomDic);
 }
 else
 {
@@ -45,7 +45,7 @@ const departementsStr = directoryRoutes.readFile("./modules/Data/departements.js
 if(departementsStr !== undefined)
 {
     app.locals.departements = JSON.parse(departementsStr);
-    console.log(app.locals.departements);
+    //console.log(app.locals.departements);
 }
 else
     app.locals.departements = [];
@@ -53,7 +53,7 @@ const secretFoldersStr = directoryRoutes.readFile('./modules/Data/secretFolders.
 if(secretFoldersStr !== undefined)
 {
     app.locals.secretFolders = JSON.parse(secretFoldersStr);
-    console.log(app.locals.secretFolders);
+    //console.log(app.locals.secretFolders);
 }
 else
     app.locals.secretFolders = [];
@@ -62,7 +62,7 @@ const archivedFoldersStr = directoryRoutes.readFile('./modules/Data/archives.jso
 if(archivedFoldersStr !== undefined)
 {
     app.locals.archives = JSON.parse(archivedFoldersStr);
-    console.log(app.locals.archives);
+    //console.log(app.locals.archives);
 }
 else
     app.locals.archives = [];
@@ -116,11 +116,30 @@ if(partnersDicReverseStr !== undefined)
 }
 else
     app.locals.partnersDicReverse = {};
-
+//console.log(app.locals.partnersDic);
+//console.log("-------------------------------------------------------------------");
 if(Object.keys(app.locals.partnersDicReverse).length == 0)
 {
-    app.locals.partnersDicReverse = Object.entries(app.locals.partnersDic).map(([key,value])=> ({[value.fileName]:app.locals.partners.find(partner=> partner.name ==key)}));
+    app.locals.partnersDicReverse = Object.entries(app.locals.partnersDic).reduce((acc,[key,value])=> {
+        value.forEach(someVal=> {
+            let found = app.locals.partners.find(partner=> partner.name ==key);
+                
+            if(!acc[someVal.path] )
+            {
+                acc[someVal.path] = [];
+                if(found)
+                    acc[someVal.path] = [found];
+            }
+            else
+            {
+                if(found)
+                    acc[someVal.path].push(found);
+            }
+        });
+        return acc;
+    } ,{});
 }
+//console.log("-------------------------------------------------------------------");
 //console.trace(app.locals.partnersDicReverse);
 const userPartnersStr = directoryRoutes.readFile("./modules/Data/userPartners.json");
 if(userPartnersStr !== undefined)
@@ -134,7 +153,7 @@ if(userPartnersStr !== undefined)
 }
 else
     app.locals.userPartners = {};
-
+console.trace(app.locals.partnersDicReverse);
 app.use(cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
@@ -143,11 +162,11 @@ app.use(cors({
 
 directoryRoutes.mapDirectory("./","principal","",{app},true);
 
-const files = fs.readdirSync('./');
+// const files = fs.readdirSync('./');
 
-files.forEach(file => {
-  console.log(file);
-});
+// files.forEach(file => {
+//   console.log(file);
+// });
 
 fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(app.locals.roomDic));    
     
@@ -165,7 +184,7 @@ app.use('/api/retrievals',retrievalRoutes);
 
 // Server start
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    //console.log(`Server running on port ${PORT}`);
 });
 
 

@@ -49,6 +49,7 @@ router.delete('/',authenticateToken, (req, res) => {
         var withFilters = yourSession.commands.filter(command => !commands.find(paramCommand => JSON.stringify(paramCommand) == JSON.stringify(command)) );
         /*console.log(withFilters.length);
         console.log("-------------------------------------");*/
+        console.trace(yourSession.commands,commands);
         const text = withFilters.length != yourSession.commands.length?(yourSession.commands.length-withFilters.length) +" elements deleted ":" 0 elements deleted";
         yourSession.commands = withFilters;
         console.log(text);
@@ -74,8 +75,10 @@ router.get('/', authenticateToken, (req, res) => {
     const interval = setInterval(()=>{  
         if(yourSession.commands.length > 0)
         {
-            console.log(req.app.locals.sessions);
-            res.json({message:"Il y a des mises à jours.",commands:yourSession.commands});
+            //console.log(req.app.locals.sessions);
+            res.json({message:"Il y a des mises à jours.",commands:
+                yourSession.commands.map(command => ({...command}))});
+            console.trace(`Sending ${yourSession.commands.length} commands`,yourSession.commands);
             clearInterval(interval);
         }
     },200);

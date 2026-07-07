@@ -26,7 +26,7 @@ function mapDirectoryorFileUtil(pathPrefix,folderPath,parentPath,req,start,passe
         return undefined;
 
     const stats = fs.statSync(dirrectory);
-   
+    let currentPath = path.join(parentPath,folderPath);
     const mappedDirectory = {
       name: path.basename(folderPath),
       isSecret: req?req.app.locals.secretFolders.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
@@ -34,12 +34,12 @@ function mapDirectoryorFileUtil(pathPrefix,folderPath,parentPath,req,start,passe
       year:stats.isDirectory()?undefined:stats.mtime.getFullYear(),
       isDirectory: stats.isDirectory(),
       type:stats.isDirectory()?undefined:path.basename(folderPath).split(".")[path.basename(folderPath).split(".").length-1],
-      path: path.join(parentPath,folderPath),
+      path: currentPath,
       parentPath: parentPath,
       isArchived: req?req.app.locals.archives.find(value=> value == path.join(parentPath,folderPath))?true:false:false,
       isCV: req?req.app.locals.cvDirs.find(value=>path.join(parentPath,folderPath).startsWith(value))?true:false:false,
       //content: (stats.isDirectory())?undefined:fs.readFileSync(dirrectory),
-      partners:req.app.locals.partnersDicReverse?req.app.locals.partnersDicReverse[path.join(parentPath,folderPath)]:[],
+      partners:req.app.locals.partnersDicReverse? req.app.locals.partnersDicReverse[currentPath]:[],
       subdirectories: []
     };
     
@@ -105,6 +105,7 @@ function readFile(path)
 {
     if(fs.existsSync(path))
     return fs.readFileSync(path);
+    fs.mkdirSync(path);
     return undefined;
 }  
 
@@ -483,7 +484,10 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
     const {oldPath,parentPath,name} = req.body;
     var newPath = path.join('./',parentPath.replaceAll('\\',path.sep).replaceAll('/',path.sep),name);
     console.log("Renaming folder from "+oldPath+" to "+newPath);
-   
+    //renames path in file repertory and in the session update commands array and into partnerDic and into partnersDicReverse.
+    //renames rooms that contain path into sessions and into users
+    //renames paths in secretFolders array that contain path
+    //renames paths in archives array that contain path
     if(fs.existsSync(newPath) && oldPath == newPath)
     {
         res.status(400).json({message:"Ce document existe déjà."});
@@ -505,10 +509,10 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         RenameRoomsContainingOldPathWithNewPath(oldPath,newPath,req.app.locals.roomDic);
         req.app.locals.secretFolders = 
             RenameSecretsArrayContainingOldPathWithNewPathInArray(oldPath,newPath,req.app.locals.secretFolders);
+        req.app.locals.archives = 
+            RenameSecretsArrayContainingOldPathWithNewPathInArray(oldPath,newPath, req.app.locals.archives);
         renamePartnerDicArrayValues(req,oldPath,newPath);
 
-        
-        RenameSecretsArrayContainingOldPathWithNewPathInArray(oldPath,newPath,[]);
         updateRoomsAndSessions(req,oldPath,newPath);
         /*console.log("-------------------------1------------------------");
         console.log(req.app.locals.secretFolders);
@@ -524,8 +528,10 @@ router.post('/renameFolder',authenticateToken,(req,res)=>{
         writeFile("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
         writeFile("./modules/Data/users.json",JSON.stringify(req.app.locals.users));
         writeFile("./modules/Data/partnersDic.json",JSON.stringify(req.app.locals.partnersDic));
+        
         var command ={entryparams:{fieldName:"directories",operation:"rename_directory"},command:{oldPath:oldPath,path:newPath,name:path.basename(newPath),isDirectory:true,parentPath:path.dirname(newPath)}};
         roomUpdates(req,newPath,command);
+        
         fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(req.app.locals.roomDic));
         var commandSub =  command.command;
         var directories =  mapDirectory("./",newPath,"",req);
@@ -695,17 +701,28 @@ router.post('/', authenticateToken, (req, res) => {
 });
 router.delete("/partnerFile",authenticateToken,(req,res)=>{
     const {name,path,parentPath,fileName} = req.body;
+    console.log("Inside delete partnerFile",name,path,parentPath,fileName);
     try
     {
-        let foundStuff = req.app.locals.partnersDic[name].filter(value=> value.path != path && value.parentPath != parentPath && value.fileName != fileName);
-        if(req.app.locals.partnersDic[name] && req.app.locals.partnersDic[name].length != req.app.locals.partnersDic[name].length)
+        let foundStuff = req.app.locals.partnersDic[name]?.filter(value=> value.path != path || value.parentPath != parentPath || value.fileName != fileName);
+        console.log("foundStuff",foundStuff);
+        console.log("partnersDic",req.app.locals.partnersDic[name]);
+        if(req.app.locals.partnersDicReverse[path])
+        { 
+            delete req.app.locals.partnersDicReverse[path];
+        }
+        if(name &&  req.app.locals.partnersDic[name] && foundStuff &&
+             req.app.locals.partnersDic[name].length != foundStuff.length)
         {
             req.app.locals.partnersDic[name] = foundStuff;
+            if(req.app.locals.partnersDic[name].length === 0)
+                delete req.app.locals.partnersDic[name];
             fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
             var command = {entryparams:{fieldName:"directories",operation:"delete_partner_directory"},
             command:{path:path,name:name,isDirectory:true,parentPath: parentPath,isPartner:true,fileName}};
             partnerRoomUpdates(req,name,command);
             roomUpdates(req,parentPath,command);
+            console.log("Fichier partenaire supprimé avec succès!");
             res.json({message:"Fichier partenaire supprimé avec succès!"});
             return;
         }
@@ -752,9 +769,10 @@ router.post('/partnerFile', authenticateToken, (req, res) => {
             fs.mkdirSync('./modules/Data', { recursive: true });
         }
         fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
-        writeFile('./modules/Data/partnersDicReverse.json',req.app.locals.partnersDicReverse);
+        //writeFile('./modules/Data/partnersDicReverse.json',req.app.locals.partnersDicReverse);
         //mapDirectory("./",path,"",req);
         mapDirectoryorFileUtil("./",path,"",req,undefined,true);
+        console.trace(`Wrote ${req.app.locals.partnersDic} into ./modules/Data/partnersDic.json`);
     }
     catch(err)    
     {
@@ -765,7 +783,8 @@ router.post('/partnerFile', authenticateToken, (req, res) => {
     {
         console.log("Parent path: " + parentPath);
         var command = {entryparams:{fieldName:"directories",operation:"add_partner_directory"},
-        command:{path:path,name:name,isDirectory:true,parentPath: parentPath,isPartner:true,fileName}};
+        command:{path:path,name:name,isDirectory:true,parentPath: parentPath,isPartner:true,fileName
+            ,partnerPath:req.app.locals.partners.find(p=> p.name == name).path}};
         partnerRoomUpdates(req,name,command);
         roomUpdates(req,parentPath,command);
     }
@@ -893,7 +912,11 @@ function deleteCVHelper(foundDir,req)
 // Delete a directory
 router.delete('/', authenticateToken, (req, res) => {
     var { path, parentPath } = req.query;
-   
+    //removes the patn from the file repertory
+    //adds to  session updates array the removal comment
+    /*secrets array and archives array and partnersDic
+     and partnersDicReverse are not affected meaning if the path it recreated
+      it inherits the properties is Archive or is Secret*/
     console.log("Deleting directory at path: ", decodeURIComponent(path)); 
     console.log("Deleting a directory with parent path: ", decodeURI(parentPath)); 
     path = decodeURIComponent(path);
@@ -936,6 +959,12 @@ router.delete('/', authenticateToken, (req, res) => {
                         }
                     )
                 );
+
+                if(foundDir && req.app.locals.partnersDicReverse[foundDir.path])
+                {
+                    delete req.app.locals.partnersDicReverse[foundDir.path];
+                }
+
                 if(foundChangesInPartnersDic)
                 {
                     req.app.locals.partnersDic = updatedDic;

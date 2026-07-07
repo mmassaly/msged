@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const {roomUpdates, allRoomUpdated, partnerRoomUpdates,updateRoomandSessionofHostPartnerUser} = require('./roomUtil');
+const {roomUpdates, allRoomUpdated, partnerRoomUpdates,allRoomUpdatedExcludeTypePartner,updateRoomandSessionofHostPartnerUser,allRoomUpdatedTypePartner} = require('./roomUtil');
 const router = express.Router();
 const mime_lookup = require('mime-types');
 const fs = require('node:fs');
@@ -429,7 +429,9 @@ const upload_2 = multer({ storage: storage_2 ,limits: {
 router.delete('/partners',authenticateToken,(req,res)=>{
     const outterPath = path;
     const {name} = req.body;
-    
+    //removes partner from partners array then notify it to sessions updates array as a command. End user will use that update to disengage from the partner;
+    //removes partner from partnersDic then notify it to rooms that are linked to each path in the partnersDic dictionnary via the sessions updates
+    //removes partner from partnersDicArray
     if(!name)
     {
         res.status(400).json({message:"Vous devez identifier le partenaire"});
@@ -445,12 +447,37 @@ router.delete('/partners',authenticateToken,(req,res)=>{
                 fs.unlinkSync(partner.path);
             }
             
-            req.app.locals.partners = req.app.locals.partners.filter(partnerElement=> partnerElement !== partner);
-            fs.writeFileSync(outterPath.join("./","modules/Data/partners.json"),JSON.stringify(req.app.locals.partners));
-            res.status(200).end();
             var command = {entryparams:{fieldName:"partners",operation:"remove_partner"}
                             ,command:{name:partner.name,path:partner.path,description:partner.description}};
-            allRoomUpdated(req,command);
+            //allRoomUpdated(req,command);
+            req.app.locals.partnersDic[name]?.forEach(value=>{
+                var command2 = {...command};
+                command2.entryparams.pathToFilePartnered = value.path;
+                command2.entryparams.parentPathToFilePartnered = value.parentPath;
+                roomUpdates(req,value.parentPath,command2);
+            });
+
+            allRoomUpdatedExcludeTypePartner(req,command);
+            allRoomUpdatedTypePartner(req,command,partner.name);
+            
+            req.app.locals.partners = req.app.locals.partners.filter(partnerElement=> partnerElement !== partner);
+            if(req.app.locals.partnersDic[name])
+            {
+                delete req.app.locals.partnersDic[name];
+                fs.writeFileSync(outterPath.join("./","modules/Data/partnersDic.json"),JSON.stringify(req.app.locals.partnersDic));
+            }
+
+            Object.values(req.app.locals.partnersDicReverse).forEach((values)=> {
+                let foundIndex = values.findIndex(value=> value.name == partner.name);
+                if(foundIndex> -1)
+                {
+                    values.splice(foundIndex,1);
+                }
+            });
+            
+            fs.writeFileSync(outterPath.join("./","modules/Data/partners.json"),JSON.stringify(req.app.locals.partners));
+            res.status(200).end();
+            
             return;
         }
         catch(err)
@@ -467,6 +494,12 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
     const partners = req.app.locals.partners;
     const partner = partners.find(element=> element.name == name);
     console.log("inside validy middleware",name,newName,newDescription,partners,partner);
+    
+    /*finds the partner from partners and renames it then uodates the rooms that have access to the file
+        that is linked with teh partner as well as the partners that link to it;*/
+    
+    /*Renames partners from partnersDic and from partnersDicReverse*/
+    
     if(name && (newName || newDescription))
     {
         if(!partner)
@@ -492,7 +525,7 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
 },(req,res)=>{
     const {name,newName,newDescription} = req.body;
     const uploadObject = req.uploadObject;
-    
+    console.trace(req.app.locals.partnersDic);
     uploadObject.name = newName;
     uploadObject.description = newDescription;
     
@@ -511,16 +544,18 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
         req.command.command.newName = newName;
         req.command.command.newDescription = newDescription;
         req.command.command.name = name;
-
+        //console.log(newName,newDescription);
         fs.writeFileSync("./modules/Data/partners.json",JSON.stringify(partners));   
         let foundOldName = Object.keys(req.app.locals.partnersDic).find(key=> key == name);
         if(foundOldName)
         {
             console.log("Updating partnersDic with new partner name...");
             req.app.locals.partnersDic[newName] = req.app.locals.partnersDic[foundOldName];
-            delete req.app.locals.partnersDic[foundOldName];
+            if(newName !== foundOldName)
+                delete req.app.locals.partnersDic[foundOldName];
             //console.log(req.app.locals.userPartners,name);
             //console.log(Object.entries(req.app.locals.userPartners).filter(([key,value])=> value.find(v=> v == name)));     
+            console.trace(req.app.locals.partnersDic,newName);
             fs.writeFileSync("./modules/Data/partnersDic.json",JSON.stringify(req.app.locals.partnersDic));
         }
 
@@ -537,20 +572,48 @@ router.put('/partners',authenticateToken,upload_2.single('file'),async(req,res,n
             fs.writeFileSync("./modules/Data/userPartners.json",JSON.stringify(req.app.locals.userPartners));
         }
 
-        req.app.locals.users.filter(user=> user.partners.find(partner=> partner == name)).forEach(user=>{
+        req.app.locals.users.filter(user=> user.partners && user.partners.find(partner=> partner == name)).forEach(user=>{
             user.partners =  user.partners?user.partners.map(partner=> partner == name?newName:partner):undefined;
         });
         
-        allRoomUpdated(req,req.command);
+        console.log(partner,req.app.locals.partnersDic,newName);
+        if(partner)
+        {
+            console.trace(partner.name,partner.path);
+            if(req.app.locals.partnersDic[partner.name])
+            {
+                req.app.locals.partnersDic[newName] = req.app.locals.partnersDic[partner.name]
+                if(newName !== partner.name)
+                    delete req.app.locals.partnersDic[partner.name];
+            }
+            
+            Object.values(req.app.locals.partnersDicReverse).forEach((values)=> {
+                let foundIndex = values.findIndex(value=> value.name == partner.name);
+                if(foundIndex> -1)
+                {
+                    values[foundIndex] = newName;
+                }
+            });
+        }
+        updateRoomandSessionofHostPartnerUser(req,name,newName);
+	    
+       
+        req.app.locals.partnersDic[newName]?.forEach(value=>{
+            var command2 = {...req.command};
+            command2.pathToFilePartnered = value.path;
+            command2.parentPathToFilePartnered = value.parentPath;
+            roomUpdates(req,value.parentPath,command2);
+        });
+
+        allRoomUpdatedExcludeTypePartner(req,req.command);
+        allRoomUpdatedTypePartner(req,req.command,newName);
         
-        //updateRoomandSessionofHostPartnerUser(req,name,newName);
-	            
         if(fs.existsSync(path.join("./","Data/partners/empty.txt")))
             fs.unlinkSync(path.join("./","Data/partners/empty.txt"));
     }
     catch(err)
     {
-        console.trace(err);
+        console.error(err);
         res.status(500).end();
         return;
     }
