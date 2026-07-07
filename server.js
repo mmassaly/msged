@@ -161,8 +161,7 @@ app.use(cors({
     allowedHeaders: ["Authorization", "Content-Type"],
 }));
 
-directoryRoutes.mapDirectory(path.join(__dirname, 'modules', 'Data'), "principal", {}, {app}, true);
-
+directoryRoutes.mapDirectory("./","principal","",{app},true);
 // const files = fs.readdirSync('./');
 
 // files.forEach(file => {
