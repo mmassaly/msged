@@ -105,7 +105,6 @@ function readFile(path)
 {
     if(fs.existsSync(path))
     return fs.readFileSync(path);
-    fs.mkdirSync(path, { recursive: true });
     return undefined;
 }  
 
