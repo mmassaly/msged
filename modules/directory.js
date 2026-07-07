@@ -103,9 +103,15 @@ function readSize(path)
 }
 function readFile(path)
 {
-    if(fs.existsSync(path))
-    return fs.readFileSync(path);
-    return undefined;
+    try
+    {
+        console.log("Path ",path," exists is ",fs.existsSync(path))
+        if(fs.existsSync(path))
+            return fs.readFileSync(path);
+    }
+    catch(err){
+        return undefined;
+    }
 }  
 
 function readFile2(path)
