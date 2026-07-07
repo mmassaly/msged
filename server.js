@@ -22,7 +22,7 @@ app.locals.secretAdminAccountKey = process.env.SECRET_ADMIN_ACCOUNT_KEY;
 app.locals.secretPassword = process.env.SECRET_PASSWORD;
 app.locals.intervals = [];
 
-const usersStr = directoryRoutes.readFile("./modules/Data/users.json");
+const usersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','users.json'));
 if(usersStr !== undefined)
 {
     app.locals.users = JSON.parse(usersStr);
@@ -30,7 +30,7 @@ if(usersStr !== undefined)
 else
     app.locals.users = [];
 
-const roomDicStr = directoryRoutes.readFile("./modules/Data/roomDic.json");
+const roomDicStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','roomDic.json'));
 if(roomDicStr !== undefined)
 {
     app.locals.roomDic = JSON.parse(roomDicStr);
@@ -41,7 +41,7 @@ else
     app.locals.roomDic = {};
 }
 
-const departementsStr = directoryRoutes.readFile("./modules/Data/departements.json");
+const departementsStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','departements.json'));
 if(departementsStr !== undefined)
 {
     app.locals.departements = JSON.parse(departementsStr);
@@ -49,7 +49,7 @@ if(departementsStr !== undefined)
 }
 else
     app.locals.departements = [];
-const secretFoldersStr = directoryRoutes.readFile('./modules/Data/secretFolders.json')
+const secretFoldersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','secretFolders.json'));
 if(secretFoldersStr !== undefined)
 {
     app.locals.secretFolders = JSON.parse(secretFoldersStr);
@@ -58,7 +58,7 @@ if(secretFoldersStr !== undefined)
 else
     app.locals.secretFolders = [];
 
-const archivedFoldersStr = directoryRoutes.readFile('./modules/Data/archives.json')
+const archivedFoldersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','archives.json'));
 if(archivedFoldersStr !== undefined)
 {
     app.locals.archives = JSON.parse(archivedFoldersStr);
@@ -67,7 +67,7 @@ if(archivedFoldersStr !== undefined)
 else
     app.locals.archives = [];
 
-const cvsDirFoldersStr = directoryRoutes.readFile('./modules/Data/cvFolders.json')
+const cvsDirFoldersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','cvFolders.json'));
 if(cvsDirFoldersStr !== undefined)
 {
     app.locals.cvDirs = JSON.parse(cvsDirFoldersStr);
@@ -76,7 +76,7 @@ if(cvsDirFoldersStr !== undefined)
 else
     app.locals.cvDirs = [];
 
-const cvsStr = directoryRoutes.readFile('./modules/Data/cvs.json')
+const cvsStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','cvs.json'));
 if(cvsStr !== undefined)
 {
     app.locals.cvs = JSON.parse(cvsStr);
@@ -84,7 +84,7 @@ if(cvsStr !== undefined)
 else
     app.locals.cvs = {};
 
-const occupationsStr = directoryRoutes.readFile("./modules/Data/occupations.json");
+const occupationsStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','occupations.json'));
 if(occupationsStr !== undefined)
 {
     app.locals.occupations = JSON.parse(occupationsStr);
@@ -92,7 +92,7 @@ if(occupationsStr !== undefined)
 else
     app.locals.occupations =[];
 
-const partnersStr = directoryRoutes.readFile("./modules/Data/partners.json");
+const partnersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','partners.json'));
 if(partnersStr !== undefined)
 {
     app.locals.partners = JSON.parse(partnersStr);
@@ -100,7 +100,7 @@ if(partnersStr !== undefined)
 else
     app.locals.partners = [];
 
-const partnersDicStr = directoryRoutes.readFile("./modules/Data/partnersDic.json");
+const partnersDicStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','partnersDic.json'));
 if(partnersDicStr !== undefined)
 {
     app.locals.partnersDic = JSON.parse(partnersDicStr);
@@ -109,7 +109,7 @@ else
     app.locals.partnersDic = {};
 
 
-const partnersDicReverseStr = directoryRoutes.readFile("./modules/Data/partnersDicReverse.json");
+const partnersDicReverseStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','partnersDicReverse.json'));
 if(partnersDicReverseStr !== undefined)
 {
     app.locals.partnersDicReverse = JSON.parse(partnersDicReverseStr);
@@ -141,7 +141,7 @@ if(Object.keys(app.locals.partnersDicReverse).length == 0)
 }
 //console.log("-------------------------------------------------------------------");
 //console.trace(app.locals.partnersDicReverse);
-const userPartnersStr = directoryRoutes.readFile("./modules/Data/userPartners.json");
+const userPartnersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data', 'userPartners.json'));
 if(userPartnersStr !== undefined)
 {
     app.locals.userPartners = JSON.parse(userPartnersStr);
@@ -160,7 +160,7 @@ app.use(cors({
     allowedHeaders: ["Authorization", "Content-Type"],
 }));
 
-directoryRoutes.mapDirectory("./","principal","",{app},true);
+directoryRoutes.mapDirectory(path.join(__dirname, 'modules', 'Data'), "principal", {}, {app}, true);
 
 // const files = fs.readdirSync('./');
 
@@ -168,8 +168,8 @@ directoryRoutes.mapDirectory("./","principal","",{app},true);
 //   console.log(file);
 // });
 
-fs.writeFileSync("./modules/Data/roomDic.json",JSON.stringify(app.locals.roomDic));    
-    
+fs.writeFileSync(path.join(__dirname, 'modules', 'Data', 'roomDic.json'), JSON.stringify(app.locals.roomDic));
+
 // File upload routes
 app.use('/api/upload', fileUploadRoutes);
 
