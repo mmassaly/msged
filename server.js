@@ -7,6 +7,7 @@ const authentificationRoutes = require('./modules/authentification');
 const updateRoutes = require('./modules/update');
 const retrievalRoutes = require('./modules/retrievals').router;
 const fs = require('fs');
+const path = require('path');
 
 process.env.LANG = 'fr_FR.UTF-8';
 dotenv.config();
