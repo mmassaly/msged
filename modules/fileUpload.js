@@ -653,9 +653,10 @@ router.post('/partners',authenticateToken,upload_2.single('file'),(req,res)=>{
     res.status(200).end();
 });
 router.post('/', authenticateToken, upload.array('files'), (req, res) => {
-    //const folder = req.body.folder; // Get the folder to save into
+    console.log("Inside successful upload route");
+    const folder = req.body.folder; // Get the folder to save into
     // Save metadata in the database (if necessary)
-    //console.log(`Files uploaded to folder: ${folder}`);
+    console.log(`Files uploaded to folder: ${folder}`);
     console.log("******************************************");
     console.log(req.body);
     //req.on('data',(chunk)=> console.log(chunk));
