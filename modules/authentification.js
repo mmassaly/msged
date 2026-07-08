@@ -331,12 +331,18 @@ router.post('/signup', async (req, res) => {
   }
   // Store user
   req.app.locals.users.push(newUser);
-  const users = JSON.stringify(req.app.locals.users);
-  fs.writeFileSync("./modules/Data/users.json",users.map(user => {
-    let newUser = user;
-    delete newUser["partners"];
-    return newUser;
-  }));
+  
+  fs.writeFileSync("./modules/Data/users.json",JSON.stringify(
+    req.app.locals.users.map(user => {
+      let newUser = { ...user };   // clone to avoid mutating original
+      delete newUser.partners;
+      return newUser;
+    }),
+    null,
+    2 // pretty-print with indentation
+  ),
+  "utf8");
+  
   var command ={entryparams:{fieldName:"user_info",operation:"add_user_info"},
    command:newUser};
          
