@@ -168,8 +168,8 @@ directoryRoutes.mapDirectory("./","principal","",{app},true);
 //   console.log(file);
 // });
 
-fs.writeFileSync(path.join(__dirname, 'modules', 'Data', 'roomDic.json'), JSON.stringify(app.locals.roomDic));
-
+/*fs.writeFileSync(path.join(__dirname, 'modules', 'Data', 'roomDic.json'), JSON.stringify(app.locals.roomDic));
+*/
 // File upload routes
 app.use('/api/upload', fileUploadRoutes);
 
