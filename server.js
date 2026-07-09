@@ -39,7 +39,8 @@ if(roomDicStr !== undefined)
 }
 else
 {
-    app.locals.roomDic = {};
+    app.locals.roomDic = {"principal":["principal"],"principal/Administration":["principal","principal/Administration"],"principal/Comptabilité": ["principal","principal/Comptabilité"],"principal/Finances": ["principal","principal/Finances"],"principal/Gestion": ["principal","principal/Gestion"],"principal/Ressources Humaines (RH)": ["principal","principal/Ressources Humaines (RH)"],"principal/Tech et Développement de logiciels": ["principal","principal/Tech et Développement de logiciels"],"principal/Dossier d'archives": ["principal","principal/Dossier d'archives"]};
+    directoryRoutes.writeFile(path.join(__dirname, 'modules', 'Data','roomDic.json'), JSON.stringify(app.locals.roomDic));
 }
 
 const departementsStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','departements.json'));
