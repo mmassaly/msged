@@ -8,8 +8,8 @@ const mime_lookup = require('mime-types');
 const fs = require('node:fs');
 
 // ✅ Middleware to parse JSON and URL-encoded bodies
-router.use(express.json({ limit: '10gb' }));
-router.use(express.urlencoded({ extended: true,limit: '10gb' }));
+router.use(express.json({ limit: '50gb' }));
+router.use(express.urlencoded({ extended: true,limit: '50gb' }));
 
 // Middleware for token authentication
 const authenticateToken = (req, res, next) => {

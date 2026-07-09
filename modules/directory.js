@@ -123,9 +123,9 @@ function readFile2(path)
 
 function writeFile(path,data)
 {
-    if(fs.existsSync(path))
-    return fs.writeFileSync(path,data);
-    return undefined;
+    if(!fs.existsSync(path))
+        fs.mkdirSync(pathObj.dirname(path), { recursive: true });
+    return fs.writeFileSync(path,data);;
 }  
 
 const authenticateToken = (req, res, next) => {

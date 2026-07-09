@@ -155,11 +155,11 @@ if(userPartnersStr !== undefined)
 else
     app.locals.userPartners = {};
 console.trace(app.locals.partnersDicReverse);
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Authorization", "Content-Type"],
-}));
+// app.use(cors({
+//     origin: "*",
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     allowedHeaders: ["Authorization", "Content-Type"],
+// }));
 
 directoryRoutes.mapDirectory("./","principal","",{app},true);
 // const files = fs.readdirSync('./');
