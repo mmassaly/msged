@@ -9,9 +9,6 @@ const retrievalRoutes = require('./modules/retrievals').router;
 const fs = require('fs');
 const path = require('path');
 
-process.env.LANG = 'fr_FR.UTF-8';
-dotenv.config();
-
 const app = express(); 
 const PORT = process.env.PORT || 3039;
 

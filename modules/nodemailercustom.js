@@ -1,14 +1,18 @@
 const nodemailer = require("nodemailer");
+const dotenv = require('dotenv');
+dotenv.config();
+console.trace(process.env.NODE_MAILER);
 
 // Transporter setup
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "massalymamadou@gmail.com",       // replace with your Gmail
-    pass: "bnom cnwd dspz ejrh"           // paste the 16-char App Password
+    pass: process.env.NODE_MAILER           // paste the 16-char App Password
   }
 });
 
+console.trace(process.env.NODE_MAILER);
 
 function sendNewAccountMailOptions(to,content,attachments)
 {

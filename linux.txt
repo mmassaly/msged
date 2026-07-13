@@ -1,3 +1,5 @@
+
+
 PORT OPENING
 **************************
 sudo ufw allow 3039/tcp
@@ -25,7 +27,7 @@ rm -rf directory_name
 
 **********************
 
-scp -r  "C:/Users/hp/Documents/GitHub/React-MSGEDFileSystem/FileDirServer/principal" ubuntu@51.38.190.202:~/documents/msged
+scp -r  "C:/Users/hp/Documents/GitHub/React-MSGEDFileSystem/FileDirServer/principal" ubuntu@37.59.107.253:~/documents/msged
 
 
 🧪 Example
