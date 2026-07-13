@@ -447,7 +447,7 @@ const loginHandler = async (req, res) => {
   const foundSession = req.app.locals.sessions.find( session => session.currentToken == previousToken || session.oldToken == previousToken );
 
   if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
-   || req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0))
+   || req.app.locals.sessions.findIndex( session => session.oldTokens?.find(atoken=> atoken == previousToken)|| session.currentToken == previousToken || session.oldToken == previousToken )< 0))
   {
     //console.log((req.originalUrl.indexOf("loginQRStepTwo") < 0)?"loginQRStepTwo not a part of "+req.originalUrl:"");
     //console.log((!previousToken)?"Previous token missing"
