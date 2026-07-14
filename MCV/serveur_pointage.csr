@@ -1,0 +1,33 @@
+server {
+    listen 443 ssl;
+    server_name www.serveur-pointage.ms-associes-digital.com;
+	        
+    ssl_certificate     /etc/letsencrypt/live/www.serveur-pointage.ms-associes-digital.com/fullchain.pem; #sudo certbot --nginx -d www.serveurpointage.ms-associes-digital.com
+
+    ssl_certificate_key /etc/letsencrypt/live/www.serveur-pointage.ms-associes-digital.com/privkey.pem; #sudo certbot --nginx -d www.serveurpointage.ms-associes-digital.com
+
+
+    location / {
+        proxy_pass http://localhost:3039;   # adjust to your app port
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+
+	#add_header 'Access-Control-Allow-Origin' '*' always;
+        #add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE' always;
+        #add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
+        
+	
+        # ✅ Handle preflight requests
+        #if ($request_method = OPTIONS) {
+        #    return 204;
+        #}
+    }
+}
+server {
+    listen 80;
+    server_name www.serveur-pointage.ms-associes-digital.com;
+
+    return 301 https://www.serveur-pointage.ms-associes-digital.com$request_uri;
+}
+
+
