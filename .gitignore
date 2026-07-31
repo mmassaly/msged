@@ -2,3 +2,4 @@ node_modules/
 modules/Data/
 modules/NewData/
 principal/
+.env
