@@ -66,8 +66,8 @@ function generatenewAccountHTML(title,content)
     return generateHtml({
         title: title,
         source: "https://www.msged.msassocies-digital.com/msa.jpg",
-        imgWidth: "60px",
-        imgHeight: "60px",
+        imgWidth: "36px",
+        imgHeight: "36px",
         content: content
     });
 }
@@ -99,11 +99,12 @@ function generateHtml({ title, source, imgWidth, imgHeight, content }) {
             <head lang="fr">
                 <meta charset="UTF-8" />
                 <title>${title}</title>
-                <h3>
-                <img src="${source}" style="width:${imgWidth};height:${imgHeight};border-radius:10%;" />
-                <p>
-                ${title}
-                </p>
+                <h3 style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                  <img src="${source}" 
+                       style="width:${imgWidth};height:${imgHeight};border-radius:10%;" />
+                  <p style="margin: 0;">
+                    ${title}
+                  </p>
                 </h3>
             </head>
             <body>
