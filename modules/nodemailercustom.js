@@ -20,7 +20,7 @@ function sendNewAccountMailOptions(to,content,attachments)
 }
 function createNewAccountMailOptions(to,content,attachments)
 {
-    const title = "MSAGED-(Gestion des documents électroniques à MSA) Vous avez un nouveau compte";
+    const title = "MSAGED-(Gestion électronique documentaire de MSA) Vous avez un nouveau compte";
     const html = generatenewAccountHTML(title,content);
    
     return createMailOptions(undefined,to,
@@ -30,7 +30,7 @@ function createNewAccountMailOptions(to,content,attachments)
 
 function createAccountChangeMailOptions(to,text,html,attachments,sujetdechangement)
 {
-    const title = `MSAGED-(Gestion des documents électroniques à MSA) Votre ${sujetdechangement} vient d'être modifié.`;
+    const title = `MSAGED-(Gestion électronique documentaire de MSA) Votre ${sujetdechangement} vient d'être modifié.`;
     generatenewAccountHTML(title,content);
     return createMailOptions(undefined,to,
         title
@@ -65,7 +65,7 @@ function generatenewAccountHTML(title,content)
 {
     return generateHtml({
         title: title,
-        source: "https://www.msged.ms-associes-digital.com/msa.jpg",
+        source: "https://www.msged.msassocies-digital.com/msa.jpg",
         imgWidth: "60px",
         imgHeight: "60px",
         content: content
@@ -99,15 +99,20 @@ function generateHtml({ title, source, imgWidth, imgHeight, content }) {
             <head lang="fr">
                 <meta charset="UTF-8" />
                 <title>${title}</title>
-                <h1>
+                <h3>
                 <img src="${source}" style="width:${imgWidth};height:${imgHeight};border-radius:10%;" />
+                <p>
                 ${title}
-                </h1>
+                </p>
+                </h3>
             </head>
             <body>
                 ${content.map(row => `<p>${row}</p>`).join("\n")}
+                Veuillez vous connecter  à <a href="https://www.msged.msassocies-digital.com"></a>
             </body>
-            <footer></footer>
+            <footer>
+            M.Massaly
+            </footer>
         </html>
         `;
 }
