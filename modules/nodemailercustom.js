@@ -102,7 +102,7 @@ function generateHtml({ title, source, imgWidth, imgHeight, content }) {
                 <h3 style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
                   <img src="${source}" 
                        style="width:${imgWidth};height:${imgHeight};border-radius:10%;" />
-                  <p style="margin: 0;">
+                  <p style="margin: 0;padding: 10px">
                     ${title}
                   </p>
                 </h3>
