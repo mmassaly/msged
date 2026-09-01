@@ -109,7 +109,7 @@ function generateHtml({ title, source, imgWidth, imgHeight, content }) {
             </head>
             <body>
                 ${content.map(row => `<p>${row}</p>`).join("\n")}
-                Veuillez vous connecter  à <a href="https://www.msged.msassocies-digital.com"></a>
+                Veuillez vous connecter  à <a href="https://www.msged.msassocies-digital.com">https://www.msged.msassocies-digital.com</a>
             </body>
             <footer>
             M.Massaly
