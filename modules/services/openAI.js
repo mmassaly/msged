@@ -180,12 +180,24 @@ of the curriculum vitae content in the following text:\n${text}`
 
 
 let GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
-console.trace("GEMINI_API_KEY:", process?.env?.GEMINI_API_KEY);
-const ai = new genaiPack.GoogleGenAI({apiKey: GEMINI_API_KEY});
-//ai.models.list().then(models=>console.log(models));
+console.trace("GEMINI_API_KEY:", process?.env?.GEMINI_API_KEY ? "CONFIGURED" : "UNDEFINED");
+let ai = null;
+if (GEMINI_API_KEY) {
+  try {
+    ai = new genaiPack.GoogleGenAI({apiKey: GEMINI_API_KEY});
+  } catch (e) {
+    console.warn("Failed to initialize GoogleGenAI:", e.message);
+  }
+}
 
 
 async function main(texts,functionTitleList) {
+  if (!ai && process.env.GEMINI_API_KEY) {
+    ai = new genaiPack.GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
+  }
+  if (!ai) {
+    throw new Error('API key must be set when using the Gemini API.');
+  }
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents:  
