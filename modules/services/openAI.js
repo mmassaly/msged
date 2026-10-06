@@ -1,16 +1,29 @@
-const genaiPack = require("@google/genai");
-const OpenAI = require("openai");
+let genaiPack;
+try {
+  genaiPack = require("@google/genai");
+} catch (e) {
+  genaiPack = null;
+}
+let OpenAI;
+try {
+  OpenAI = require("openai");
+} catch (e) {
+  OpenAI = null;
+}
 const dotenv = require('dotenv');
-const pdfParse = require('pdf-parse');
+let pdfParse;
+try {
+  pdfParse = require('pdf-parse');
+} catch (e) {
+  pdfParse = null;
+}
 const fs = require('node:fs');
 dotenv.config();
 let api_key = process.env.OPENAI_KEY 
   || 
   "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";
 //console.log(process.env.OPENAI_API_KEY);
-const client = new OpenAI({
-  apiKey: api_key,
-});
+const client = OpenAI ? new OpenAI({ apiKey: api_key }) : null;
 async function extractTextFromPDF(filePath) {
   const parser = new pdfParse.PDFParse({ url: filePath });
 

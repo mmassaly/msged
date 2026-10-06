@@ -15,9 +15,9 @@ const PORT = process.env.PORT || 3039;
 app.locals.users = []; // Temporary in-memory user storage
 app.locals.sessions = [];
 app.locals.roomDic = process.env.roomDic;
-app.locals.secretKey = process.env.JWT_SECRET;
-app.locals.secretAdminAccountKey = process.env.SECRET_ADMIN_ACCOUNT_KEY;
-app.locals.secretPassword = process.env.SECRET_PASSWORD;
+app.locals.secretKey = process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
+app.locals.secretAdminAccountKey = process.env.SECRET_ADMIN_ACCOUNT_KEY || 'msged_admin_secret_key';
+app.locals.secretPassword = process.env.SECRET_PASSWORD || 'msged_secret_password';
 app.locals.intervals = [];
 
 const usersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','users.json'));

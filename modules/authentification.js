@@ -515,7 +515,8 @@ const loginHandler = async (req, res) => {
     : null;
 
   // Generate JWT
-  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
+  const secret = req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
+  const token = jwt.sign({ username }, secret, { expiresIn: '10m' });
   const newSession = {
     date: new Date(Date.now()), 
     username: username, 
