@@ -488,32 +488,31 @@ const recordLoginAudit = (user, req, newSession) => {
 
 const loginHandler = async (req, res) => {
   const { username, password, previousToken } = req.body;
-  console.log(req.app.locals.sessions.map(session => JSON.stringify(session)));
-  // Check for previous token unless it's loginQRStepTwo
-  const foundSession = req.app.locals.sessions.find( session => session.currentToken == previousToken || session.oldToken == previousToken );
 
-  if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
-   || req.app.locals.sessions.findIndex( session => session.oldTokens?.find(atoken=> atoken == previousToken)|| session.currentToken == previousToken || session.oldToken == previousToken )< 0))
-  {
-    return res.status(400).json({ message: 'Not enough credentials to continue' });
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Identifiant et mot de passe requis' });
   }
 
   // Find user
   const user = req.app.locals.users.find(user => user.username === username);
   if (!user) {
-    return res.status(400).json({ message: 'Identifiant invalide' });
+    return res.status(400).json({ message: 'Invalid username' });
   }
   
   // Verify password
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    return res.status(400).json({ message: 'Mot de passe invalide' });
+    return res.status(400).json({ message: 'Invalid password' });
   }
 
   // If user has 2FA enabled and this request is not already verified through step 2
   if (user.twoFactorEnabled === true && user.secret && req.originalUrl.indexOf("loginQRStepTwo") < 0) {
     return res.status(200).json({ require2FA: true, message: '2FA required' });
   }
+
+  const foundSession = previousToken 
+    ? req.app.locals.sessions.find(session => session.currentToken === previousToken || session.oldToken === previousToken)
+    : null;
 
   // Generate JWT
   const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
