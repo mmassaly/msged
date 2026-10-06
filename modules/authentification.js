@@ -440,8 +440,54 @@ router.post('/loginQRStepOne', (req, res,next) => {
 },generateQRCode);
 
 
+// Helper to record login audit entries
+const recordLoginAudit = (user, req, newSession) => {
+  try {
+    const auditPath = path.join(__dirname, 'Data', 'login_audit.json');
+    let auditList = [];
+    if (fs.existsSync(auditPath)) {
+      const data = fs.readFileSync(auditPath, 'utf8');
+      if (data && data.trim().length > 0) {
+        auditList = JSON.parse(data);
+      }
+    }
+    const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || '127.0.0.1';
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    const newAuditEntry = {
+      id: 'audit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      timestamp: now.toISOString(),
+      date: dateStr,
+      time: timeStr,
+      username: user.username,
+      name: user.name || user.username,
+      email: user.email || '',
+      role: user.role || (user.accountType === 'admin' ? 'Administrateur' : 'Utilisateur'),
+      room: user.room || 'principal',
+      accountType: user.accountType || 'user',
+      type: newSession.type || 'basic',
+      ip: ip.replace('::ffff:', ''),
+      browser: req.useragent ? `${req.useragent.browser} ${req.useragent.version || ''} (${req.useragent.os || 'OS'})` : 'Navigateur Web',
+      status: 'Succès'
+    };
+
+    auditList.unshift(newAuditEntry);
+    // Keep max 500 records
+    if (auditList.length > 500) {
+      auditList = auditList.slice(0, 500);
+    }
+    fs.writeFileSync(auditPath, JSON.stringify(auditList, null, 2));
+    console.log(`[AUDIT] Login recorded for ${user.username} at ${timeStr} on ${dateStr}`);
+  } catch (err) {
+    console.error('[AUDIT ERROR] Failed to record login audit:', err);
+  }
+};
+
 const loginHandler = async (req, res) => {
-  const { username, password,previousToken} = req.body;
+  const { username, password, previousToken } = req.body;
   console.log(req.app.locals.sessions.map(session => JSON.stringify(session)));
   // Check for previous token unless it's loginQRStepTwo
   const foundSession = req.app.locals.sessions.find( session => session.currentToken == previousToken || session.oldToken == previousToken );
@@ -449,128 +495,157 @@ const loginHandler = async (req, res) => {
   if( req.originalUrl.indexOf("loginQRStepTwo") < 0 && ( !previousToken
    || req.app.locals.sessions.findIndex( session => session.oldTokens?.find(atoken=> atoken == previousToken)|| session.currentToken == previousToken || session.oldToken == previousToken )< 0))
   {
-    //console.log((req.originalUrl.indexOf("loginQRStepTwo") < 0)?"loginQRStepTwo not a part of "+req.originalUrl:"");
-    //console.log((!previousToken)?"Previous token missing"
-  //:req.app.locals.sessions.findIndex( session => session.currentToken == previousToken || session.oldToken == previousToken )< 0?
-    //"Previous token not found":"no issue with previous token");
     return res.status(400).json({ message: 'Not enough credentials to continue' });
   }
 
   // Find user
   const user = req.app.locals.users.find(user => user.username === username);
   if (!user) {
-    return res.status(400).json({ message: 'Invalid username' });
+    return res.status(400).json({ message: 'Identifiant invalide' });
   }
   
   // Verify password
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    return res.status(400).json({ message: 'Invalid password' });
+    return res.status(400).json({ message: 'Mot de passe invalide' });
   }
-  /*const forbiddenindex = req.app.locals.sessions.findIndex( session => session.oldToken == previousToken );
-  if(forbiddenindex >= 0)
-  {
-    res.status(403).json({ message: 'forbidden token error', previousToken });
-    return;
-  }*/
-  // Generate JWT
-  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '2m' });
-  const newSession = {date:new Date(Date.now()), username:username, password:password,
-    currentToken : token, oldToken: previousToken,oldTokens:[previousToken,...foundSession?.oldTokens ?? []].filter(content=> content),
-    type: user.type?user.type:user.accountType == "admin"?"secret":"basic",
-    accountType:user.accountType,room: user.room,hasFinished:false,useragent:req.useragent,commands:[],partners:req.app.locals.userPartners[username]?? []};
-/*console.log("************BEFORE************");
-    console.log(req.app.locals.sessions);
-  console.log("**********BEFORE**************");*/
-  
-  
 
-  if(previousToken)
-  {
-    const index = req.app.locals.sessions.findIndex( session => session.currentToken == previousToken );
-    if( index > -1 )
-    {
+  // If user has 2FA enabled and this request is not already verified through step 2
+  if (user.twoFactorEnabled === true && user.secret && req.originalUrl.indexOf("loginQRStepTwo") < 0) {
+    return res.status(200).json({ require2FA: true, message: '2FA required' });
+  }
+
+  // Generate JWT
+  const token = jwt.sign({ username }, req.app.locals.secretKey, { expiresIn: '10m' });
+  const newSession = {
+    date: new Date(Date.now()), 
+    username: username, 
+    password: password,
+    currentToken: token, 
+    oldToken: previousToken,
+    oldTokens: [previousToken, ...(foundSession?.oldTokens ?? [])].filter(Boolean),
+    type: user.type ? user.type : (user.accountType === "admin" ? "secret" : "basic"),
+    accountType: user.accountType,
+    room: user.room,
+    hasFinished: false,
+    useragent: req.useragent,
+    commands: [],
+    partners: req.app.locals.userPartners?.[username] ?? []
+  };
+
+  if (previousToken) {
+    const index = req.app.locals.sessions.findIndex(session => session.currentToken === previousToken);
+    if (index > -1) {
       const objFound = req.app.locals.sessions[index];
-      req.app.locals.sessions.splice(index,1);
+      req.app.locals.sessions.splice(index, 1);
       console.log("session deleted");
 
-      var index2  = req.app.locals.intervals.findIndex(obj=> obj.session == objFound);
-      if(index2 >=0 )
-      {
+      const index2 = req.app.locals.intervals.findIndex(obj => obj.session === objFound);
+      if (index2 >= 0) {
         clearTimeout(req.app.locals.intervals[index2].timeoutValue);
-        req.app.locals.intervals.splice(index2,1);
+        req.app.locals.intervals.splice(index2, 1);
         console.log("timeout cleared");
       }
     }
-    
-   
-    console.log('previous login token index is '+index);
-    
-    //console.log(previousToken);
-    ///console.log(req.app.locals.sessions);
+    console.log('previous login token index is ' + index);
   }
 
-   const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
-   newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
-   req.app.locals.sessions.push(newSession);
-   req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
-    
-    /*if( req.app.locals.sessions.
-    find(session => (JSON.stringify(session.useragent) == JSON.stringify(req.useragent)
-     && (session.currentToken == newSession.currentToken || session.currentToken == newSession.oldToken)
-     && session.username == newSession.username 
-     && session.password == newSession.password 
-     && session.room == newSession.room
-     && session.hasFinished) ) == undefined ) 
-  { 
-    const timeoutValue = setTimeout(()=>{newSession.hasFinished =true;
-      newSession.commands.push({message:"loginexperied",date:new Date(Date.now())});},120000);//600000
-    req.app.locals.sessions.push(newSession);
-    req.app.locals.intervals.push({interval:timeoutValue,session:newSession});
-  }*/
+  const timeoutValue = setTimeout(() => {
+    newSession.hasFinished = true;
+    newSession.commands.push({ message: "loginexperied", date: new Date(Date.now()) });
+  }, 600000);
+  
+  req.app.locals.sessions.push(newSession);
+  req.app.locals.intervals.push({ interval: timeoutValue, session: newSession });
 
-  console.log("************AFTER************");
-    console.log(req.app.locals.sessions.length);
-  console.log("**********AFTER**************");
-  res.status(200).json({ message: 'Login successful', token,room:user.room,type:newSession.type,accountType:newSession.accountType,imgSource:user.imgSource,name:user.name,identifier: user.identifier,email:user.email});
+  // Record login in audit log
+  recordLoginAudit(user, req, newSession);
+
+  res.status(200).json({ 
+    message: 'Login successful', 
+    token,
+    room: user.room,
+    type: newSession.type,
+    accountType: newSession.accountType,
+    imgSource: user.imgSource,
+    name: user.name,
+    identifier: user.identifier,
+    email: user.email,
+    twoFactorEnabled: !!user.twoFactorEnabled
+  });
 };
 
 router.post('/loginQRStepTwo', async (req, res, next) => {
-  const { username,TOTPtoken} = req.body;
+  const { username, TOTPtoken } = req.body;
   // Find user
   const user = req.app.locals.users.find(user => user.username === username);
   if (!user) {
-    return res.status(400).json({ message: 'Invalid username' });
+    return res.status(400).json({ message: 'Identifiant invalide' });
   }
-  console.log(user.secret);
- let isVerified =  totp.verifyToken(user.secret, TOTPtoken)
- if(!isVerified)
- {
-      return res.status(400).json({ message: 'Invalid TOTP token' });
- }
- next();
+  if (!user.secret) {
+    return res.status(400).json({ message: '2FA non configuré' });
+  }
   
-},loginHandler);
+  const isVerified = totp.verifyToken(user.secret, TOTPtoken);
+  if (!isVerified) {
+    return res.status(400).json({ message: 'Code TOTP invalide' });
+  }
+  next();
+}, loginHandler);
+
 // Login route
 router.post('/login', loginHandler);
 
-// Protected route example
-router.get('/protected', (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access denied' });
-  }
+// 2FA Management routes for user settings
+router.post('/setup-2fa', authenticateToken, async (req, res) => {
+  const username = req.user.username;
+  const user = req.app.locals.users.find(u => u.username === username);
+  if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
   try {
-    const decoded = jwt.verify(token, req.app.locals.secretKey);
-    res.status(200).json({ message: 'Access granted', user: decoded });
+    const secret = totp.generateSecret(user.username);
+    user.pendingSecret = secret; // temporary until confirmed
+    const qrHtml = await totp.generateQRCode(secret);
+    res.status(200).json({ qrHtml, secret: secret.base32 });
   } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(500).json({ message: 'Erreur lors de la génération du QR Code' });
   }
 });
 
-router.get('/generateQR', generateQRCode);
+router.post('/enable-2fa', authenticateToken, async (req, res) => {
+  const username = req.user.username;
+  const { code } = req.body;
+  const user = req.app.locals.users.find(u => u.username === username);
+  if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+  const secretToVerify = user.pendingSecret || user.secret;
+  if (!secretToVerify) {
+    return res.status(400).json({ message: 'Aucun secret 2FA en attente' });
+  }
+
+  const isVerified = totp.verifyToken(secretToVerify, code);
+  if (!isVerified) {
+    return res.status(400).json({ message: 'Code de vérification invalide' });
+  }
+
+  user.secret = secretToVerify;
+  user.pendingSecret = undefined;
+  user.twoFactorEnabled = true;
+  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+  res.status(200).json({ message: '2FA activé avec succès', twoFactorEnabled: true });
+});
+
+router.post('/disable-2fa', authenticateToken, async (req, res) => {
+  const username = req.user.username;
+  const user = req.app.locals.users.find(u => u.username === username);
+  if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+  user.twoFactorEnabled = false;
+  user.secret = undefined;
+  user.pendingSecret = undefined;
+  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+  res.status(200).json({ message: '2FA désactivé avec succès', twoFactorEnabled: false });
+});
 router.get('/list',authenticateToken, (req, res) => {
   const username = req.headers['authorization']?.split(' ')[0];
   
@@ -594,6 +669,56 @@ router.get('/list',authenticateToken, (req, res) => {
     }
   } catch (err) {
     res.status(401).json({ message: err.message });
+  }
+});
+
+// Admin endpoint: Fetch daily login audit records
+router.get('/admin/login-audit', authenticateToken, (req, res) => {
+  try {
+    const username = req.user.username;
+    const currentUser = req.app.locals.users.find(u => u.username === username);
+    if (!currentUser || (currentUser.accountType !== 'admin' && currentUser.type !== 'secret')) {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs.' });
+    }
+
+    const auditPath = path.join(__dirname, 'Data', 'login_audit.json');
+    let auditList = [];
+    if (fs.existsSync(auditPath)) {
+      const data = fs.readFileSync(auditPath, 'utf8');
+      if (data && data.trim().length > 0) {
+        auditList = JSON.parse(data);
+      }
+    }
+
+    const { date, search } = req.query;
+    let filtered = auditList;
+
+    if (date && date !== 'all') {
+      filtered = filtered.filter(item => item.date === date);
+    }
+
+    if (search && search.trim().length > 0) {
+      const q = search.toLowerCase().trim();
+      filtered = filtered.filter(item =>
+        (item.username && item.username.toLowerCase().includes(q)) ||
+        (item.name && item.name.toLowerCase().includes(q)) ||
+        (item.role && item.role.toLowerCase().includes(q)) ||
+        (item.room && item.room.toLowerCase().includes(q)) ||
+        (item.ip && item.ip.toLowerCase().includes(q))
+      );
+    }
+
+    const availableDates = [...new Set(auditList.map(item => item.date))].sort().reverse();
+
+    res.status(200).json({
+      logs: filtered,
+      totalCount: filtered.length,
+      allCount: auditList.length,
+      availableDates
+    });
+  } catch (err) {
+    console.error('Error fetching login audit:', err);
+    res.status(500).json({ message: 'Erreur lors de la récupération du journal des connexions' });
   }
 });
 
