@@ -12,7 +12,8 @@ const router = express.Router();
 const path = require('path');
 const multer = require('multer');
 const nodemailerCustom = require('./nodemailercustom');
-const totp = require('./TOTP')
+const totp = require('./TOTP');
+const db = require('./db');
 
 router.use(express.json());
 router.use(useragent.express());
@@ -125,19 +126,29 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
 	return session;
     });
   
-  if(oldUser.email || newUser.email)
-  {
-    nodemailerCustom.notifyAccountChanges(!oldUser.email? newUser.email:oldUser.email,
+  const editorUsername = req.user?.username;
+  const isITAdmin = editorUsername === 'MMDev-39' || req.user?.role === 'itadmin' || req.body?.isITAdmin === true || req.body?.isITAdmin === 'true';
+
+  if (!isITAdmin && (oldUser.email || newUser.email)) {
+    nodemailerCustom.notifyAccountChanges(!oldUser.email ? newUser.email : oldUser.email,
       getChangedProps(oldUser, newUser));
+  } else if (isITAdmin) {
+    console.log(`[ITadmin Privilege] ${editorUsername} edited user "${oldUser.username}" without sending email notification.`);
   }
   
-  console.log("Writting to file ");
-   console.log(req.app.locals.users);
+  console.log("Writting to file and synchronizing with MongoDB");
   fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users.map(user => {
-    let newUser = user;
-    delete newUser["partners"];
-    return newUser;
-  })));
+    let u = { ...user };
+    delete u["partners"];
+    return u;
+  }), null, 2));
+
+  // Sync with MongoDB
+  const targetUser = req.app.locals.users.find(u => u.username === (newUser.username || oldUser.username));
+  if (targetUser) {
+    db.saveUserToDB(targetUser);
+  }
+
   var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
   command:{oldUser, newUser}};
          
@@ -207,8 +218,9 @@ router.delete('/signup',authenticateToken ,async (req, res) => {
       let newUser = user;
       delete newUser["partners"];
       return newUser;
-    }));
-    fs.writeFileSync("./modules/Data/users.json",users);
+    }), null, 2);
+    fs.writeFileSync("./modules/Data/users.json", users);
+    db.deleteUserFromDB(username);
   }     
   roomUpdates(req,room,command);
   res.status(200).json({ message: "L'utilisateur a été enlevé sans problèmes." });
@@ -342,6 +354,9 @@ router.post('/signup', async (req, res) => {
     2 // pretty-print with indentation
   ),
   "utf8");
+
+  // Sync to MongoDB
+  db.saveUserToDB(newUser);
   
   var command ={entryparams:{fieldName:"user_info",operation:"add_user_info"},
    command:newUser};
@@ -456,11 +471,17 @@ const recordLoginAudit = (user, req, newSession) => {
     const pad = (n) => String(n).padStart(2, '0');
     const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const monthStr = dateStr.substring(0, 7);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const dayOfYear = Math.ceil((now - startOfYear) / (24 * 60 * 60 * 1000));
 
     const newAuditEntry = {
       id: 'audit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
       timestamp: now.toISOString(),
       date: dateStr,
+      month: monthStr,
+      year: now.getFullYear(),
+      dayOfYear: dayOfYear,
       time: timeStr,
       username: user.username,
       name: user.name || user.username,
@@ -480,7 +501,11 @@ const recordLoginAudit = (user, req, newSession) => {
       auditList = auditList.slice(0, 500);
     }
     fs.writeFileSync(auditPath, JSON.stringify(auditList, null, 2));
-    console.log(`[AUDIT] Login recorded for ${user.username} at ${timeStr} on ${dateStr}`);
+
+    // Save to MongoDB asynchronously
+    db.recordAuditToDB(newAuditEntry);
+
+    console.log(`[AUDIT] Login recorded for ${user.username} at ${timeStr} on ${dateStr} (Day of Year: ${dayOfYear})`);
   } catch (err) {
     console.error('[AUDIT ERROR] Failed to record login audit:', err);
   }
@@ -631,7 +656,8 @@ router.post('/enable-2fa', authenticateToken, async (req, res) => {
   user.secret = secretToVerify;
   user.pendingSecret = undefined;
   user.twoFactorEnabled = true;
-  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
+  db.saveUserToDB(user);
   res.status(200).json({ message: '2FA activé avec succès', twoFactorEnabled: true });
 });
 
@@ -643,7 +669,8 @@ router.post('/disable-2fa', authenticateToken, async (req, res) => {
   user.twoFactorEnabled = false;
   user.secret = undefined;
   user.pendingSecret = undefined;
-  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users));
+  fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users, null, 2));
+  db.saveUserToDB(user);
   res.status(200).json({ message: '2FA désactivé avec succès', twoFactorEnabled: false });
 });
 router.get('/list',authenticateToken, (req, res) => {
@@ -672,7 +699,7 @@ router.get('/list',authenticateToken, (req, res) => {
   }
 });
 
-// Admin endpoint: Fetch daily login audit records
+// Admin endpoint: Fetch login audit records with today/month/year/day-of-year/live filters
 router.get('/admin/login-audit', authenticateToken, (req, res) => {
   try {
     const username = req.user.username;
@@ -686,15 +713,79 @@ router.get('/admin/login-audit', authenticateToken, (req, res) => {
     if (fs.existsSync(auditPath)) {
       const data = fs.readFileSync(auditPath, 'utf8');
       if (data && data.trim().length > 0) {
-        auditList = JSON.parse(data);
+        try {
+          auditList = JSON.parse(data);
+        } catch (e) {
+          auditList = [];
+        }
       }
     }
 
-    const { date, search } = req.query;
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const thisMonthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+    const thisYear = now.getFullYear();
+    const startOfYear = new Date(thisYear, 0, 1);
+    const todayDayOfYear = Math.ceil((now - startOfYear) / (24 * 60 * 60 * 1000));
+
+    // Active live sessions in memory right now
+    const activeLiveSessions = (req.app.locals.sessions || [])
+      .filter(s => !s.hasFinished && s.username)
+      .map(s => {
+        const u = req.app.locals.users.find(user => user.username === s.username);
+        const loginDate = s.date ? new Date(s.date) : new Date();
+        return {
+          id: 'live_' + s.username + '_' + (s.currentToken ? s.currentToken.substr(-8) : 'session'),
+          timestamp: loginDate.toISOString(),
+          date: `${loginDate.getFullYear()}-${pad(loginDate.getMonth() + 1)}-${pad(loginDate.getDate())}`,
+          time: `${pad(loginDate.getHours())}:${pad(loginDate.getMinutes())}:${pad(loginDate.getSeconds())}`,
+          username: s.username,
+          name: u?.name || s.username,
+          email: u?.email || '',
+          role: u?.role || (s.accountType === 'admin' ? 'Administrateur' : 'Utilisateur'),
+          room: s.room || 'principal',
+          accountType: s.accountType || 'user',
+          type: s.type || 'basic',
+          ip: s.ip || 'En ligne',
+          browser: s.useragent ? `${s.useragent.browser} ${s.useragent.version || ''} (${s.useragent.os || 'OS'})` : 'Navigateur Web',
+          status: 'En ligne (Live)',
+          isLive: true
+        };
+      });
+
+    const { date, month, year, dayOfYear, timeframe, search } = req.query;
     let filtered = auditList;
 
-    if (date && date !== 'all') {
-      filtered = filtered.filter(item => item.date === date);
+    // Timeframe filters
+    if (timeframe === 'active_now') {
+      filtered = activeLiveSessions;
+    } else if (timeframe === 'today' || date === 'today') {
+      filtered = filtered.filter(item => item.date === todayStr);
+    } else if (timeframe === 'this_month' || month === 'current') {
+      filtered = filtered.filter(item => item.date && item.date.startsWith(thisMonthStr));
+    } else if (timeframe === 'this_year' || year === 'current') {
+      filtered = filtered.filter(item => item.date && item.date.startsWith(String(thisYear)));
+    } else {
+      if (date && date !== 'all') {
+        filtered = filtered.filter(item => item.date === date);
+      }
+      if (month && month !== 'all') {
+        filtered = filtered.filter(item => item.date && item.date.startsWith(month));
+      }
+      if (year && year !== 'all') {
+        filtered = filtered.filter(item => item.date && item.date.startsWith(String(year)));
+      }
+      if (dayOfYear) {
+        const targetDay = parseInt(dayOfYear, 10);
+        filtered = filtered.filter(item => {
+          if (item.dayOfYear) return item.dayOfYear === targetDay;
+          const d = new Date(item.timestamp || item.date);
+          const s = new Date(d.getFullYear(), 0, 1);
+          const day = Math.ceil((d - s) / (24 * 60 * 60 * 1000));
+          return day === targetDay;
+        });
+      }
     }
 
     if (search && search.trim().length > 0) {
@@ -704,17 +795,35 @@ router.get('/admin/login-audit', authenticateToken, (req, res) => {
         (item.name && item.name.toLowerCase().includes(q)) ||
         (item.role && item.role.toLowerCase().includes(q)) ||
         (item.room && item.room.toLowerCase().includes(q)) ||
-        (item.ip && item.ip.toLowerCase().includes(q))
+        (item.ip && item.ip.toLowerCase().includes(q)) ||
+        (item.browser && item.browser.toLowerCase().includes(q))
       );
     }
 
-    const availableDates = [...new Set(auditList.map(item => item.date))].sort().reverse();
+    const availableDates = [...new Set(auditList.map(item => item.date).filter(Boolean))].sort().reverse();
+    const availableMonths = [...new Set(auditList.map(item => item.date ? item.date.substring(0, 7) : null).filter(Boolean))].sort().reverse();
+    const availableYears = [...new Set(auditList.map(item => item.date ? item.date.substring(0, 4) : null).filter(Boolean))].sort().reverse();
+
+    const todayCount = auditList.filter(item => item.date === todayStr).length;
+    const monthCount = auditList.filter(item => item.date && item.date.startsWith(thisMonthStr)).length;
+    const yearCount = auditList.filter(item => item.date && item.date.startsWith(String(thisYear))).length;
 
     res.status(200).json({
       logs: filtered,
+      activeSessions: activeLiveSessions,
+      stats: {
+        activeNowCount: activeLiveSessions.length,
+        todayCount,
+        monthCount,
+        yearCount,
+        allCount: auditList.length,
+        todayDayOfYear
+      },
       totalCount: filtered.length,
       allCount: auditList.length,
-      availableDates
+      availableDates,
+      availableMonths,
+      availableYears
     });
   } catch (err) {
     console.error('Error fetching login audit:', err);

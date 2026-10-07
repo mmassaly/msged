@@ -1,11 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+dotenv.config();
 const fileUploadRoutes = require('./modules/fileUpload');
 const directoryRoutes = require('./modules/directory');
 const authentificationRoutes = require('./modules/authentification');
 const updateRoutes = require('./modules/update');
 const retrievalRoutes = require('./modules/retrievals').router;
+const db = require('./modules/db');
 const fs = require('fs');
 const path = require('path');
 
@@ -20,13 +22,34 @@ app.locals.secretAdminAccountKey = process.env.SECRET_ADMIN_ACCOUNT_KEY || 'msge
 app.locals.secretPassword = process.env.SECRET_PASSWORD || 'msged_secret_password';
 app.locals.intervals = [];
 
-const usersStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','users.json'));
+const usersJsonPath = path.join(__dirname, 'modules', 'Data', 'users.json');
+const auditJsonPath = path.join(__dirname, 'modules', 'Data', 'login_audit.json');
+
+// Synchronous initial read from users.json as fast bootstrap
+const usersStr = directoryRoutes.readFile(usersJsonPath);
 if(usersStr !== undefined)
 {
-    app.locals.users = JSON.parse(usersStr);
+    try {
+        app.locals.users = JSON.parse(usersStr);
+    } catch(e) {
+        app.locals.users = [];
+    }
 }
 else
     app.locals.users = [];
+
+// Initialize MongoDB and synchronize collections asynchronously
+db.connectDB().then(async () => {
+    await db.seedUsersFromJSON(usersJsonPath);
+    await db.seedAuditFromJSON(auditJsonPath);
+    const dbUsers = await db.getUsersFromDB();
+    if (dbUsers && dbUsers.length > 0) {
+        app.locals.users = dbUsers;
+        console.log(`[MongoDB] Synchronized ${dbUsers.length} users from MongoDB`);
+    }
+}).catch(err => {
+    console.error('[MongoDB Startup Error]', err);
+});
 
 const roomDicStr = directoryRoutes.readFile(path.join(__dirname, 'modules', 'Data','roomDic.json'));
 if(roomDicStr !== undefined)
