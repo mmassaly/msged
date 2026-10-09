@@ -6,21 +6,50 @@ router.use(express.json());
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    //console.log(req.headers);
     const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
-    if (token == undefined) return res.sendStatus(401);
-    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
-    if(!yourSession)
-    {
-        res.status(403).json({ message: 'Invalid username' });
-        return;
-    }  
-    jwt.verify(token, req.app.locals.secretKey, (err, user) => {
-        if (err){ 
-            return res.status(403).json({ message: 'Token not matched' });
-        }//json({ message: 'Token not matched' });;
-        req.user = user;
+    if (!token) return res.sendStatus(401);
+
+    const secret = req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
+
+    jwt.verify(token, secret, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ message: 'Token not matched or expired' });
+        }
+        req.user = decoded;
+        const targetUsername = userName || decoded.username;
+
+        if (!req.app.locals.sessions) {
+            req.app.locals.sessions = [];
+        }
+
+        let yourSession = req.app.locals.sessions.find(s => 
+            s.username === targetUsername && (s.currentToken === token || s.oldTokens?.includes(token))
+        );
+
+        const foundUser = req.app.locals.users?.find(u => u.username === targetUsername);
+
+        if (!yourSession && foundUser) {
+            yourSession = {
+                date: new Date(),
+                lastActive: new Date(),
+                username: foundUser.username,
+                currentToken: token,
+                oldTokens: [],
+                type: foundUser.type || (foundUser.accountType === 'admin' ? 'secret' : 'basic'),
+                accountType: foundUser.accountType || 'user',
+                room: foundUser.room || 'principal',
+                hasFinished: false,
+                useragent: req.useragent,
+                commands: [],
+                partners: req.app.locals.userPartners?.[foundUser.username] ?? []
+            };
+            req.app.locals.sessions.push(yourSession);
+        } else if (yourSession) {
+            yourSession.lastActive = new Date();
+            yourSession.hasFinished = false;
+        }
+
         next();
     });
 };

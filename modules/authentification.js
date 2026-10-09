@@ -45,32 +45,54 @@ const upload = multer({ storage ,limits: {
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    //console.log(req.headers);
-    const token =  authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
-    if (token == undefined) return res.sendStatus(401);
-    var yourSession = req.app.locals.sessions.filter(session => session.username == userName);
-    
-    if(!yourSession)
-    {
-        res.status(403).json({ message: 'Invalid username' });
-        return;
-    }
+    if (!token) return res.sendStatus(401);
 
-    yourSession = yourSession.find( session => session.currentToken == token);
-    //console.log(req.app.locals.sessions);
-    //console.log(token);
-    if( !yourSession)
-    {    
-       res.status(403).json({ message: 'Invalid token' });
-        return;
-    }
+    const secret = req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
 
-    jwt.verify(token, req.app.locals.secretKey, (err, user) => {
-        if (err){ 
-            return res.status(403).json({ message: 'Token not matched' });
-        }//json({ message: 'Token not matched' });;
-        req.user = user;
+    jwt.verify(token, secret, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ message: 'Token not matched or expired' });
+        }
+        
+        req.user = decoded;
+        const targetUsername = userName || decoded.username;
+
+        if (!req.app.locals.sessions) {
+            req.app.locals.sessions = [];
+        }
+
+        // Find or restore session in memory
+        let yourSession = req.app.locals.sessions.find(s => 
+            s.username === targetUsername && (s.currentToken === token || s.oldTokens?.includes(token))
+        );
+
+        const foundUser = req.app.locals.users?.find(u => u.username === targetUsername);
+
+        if (!yourSession && foundUser) {
+            // Restore session seamlessly if server restarted but token is valid
+            yourSession = {
+                date: new Date(),
+                lastActive: new Date(),
+                username: foundUser.username,
+                currentToken: token,
+                oldTokens: [],
+                type: foundUser.type || (foundUser.accountType === 'admin' ? 'secret' : 'basic'),
+                accountType: foundUser.accountType || 'user',
+                room: foundUser.room || 'principal',
+                hasFinished: false,
+                useragent: req.useragent,
+                commands: [],
+                partners: req.app.locals.userPartners?.[foundUser.username] ?? []
+            };
+            req.app.locals.sessions.push(yourSession);
+            console.log(`[SESSION RECOVERED] Active session restored for ${foundUser.username}`);
+        } else if (yourSession) {
+            yourSession.lastActive = new Date();
+            yourSession.hasFinished = false;
+        }
+
         next();
     });
 };
@@ -729,11 +751,12 @@ router.get('/admin/login-audit', authenticateToken, (req, res) => {
     const startOfYear = new Date(thisYear, 0, 1);
     const todayDayOfYear = Math.ceil((now - startOfYear) / (24 * 60 * 60 * 1000));
 
-    // Active live sessions in memory right now
+    // Active live sessions in memory right now (active within last 30 minutes and not finished)
+    const nowMs = Date.now();
     const activeLiveSessions = (req.app.locals.sessions || [])
-      .filter(s => !s.hasFinished && s.username)
+      .filter(s => !s.hasFinished && s.username && (nowMs - new Date(s.lastActive || s.date || 0).getTime() < 30 * 60 * 1000))
       .map(s => {
-        const u = req.app.locals.users.find(user => user.username === s.username);
+        const u = req.app.locals.users?.find(user => user.username === s.username);
         const loginDate = s.date ? new Date(s.date) : new Date();
         return {
           id: 'live_' + s.username + '_' + (s.currentToken ? s.currentToken.substr(-8) : 'session'),
@@ -754,8 +777,13 @@ router.get('/admin/login-audit', authenticateToken, (req, res) => {
         };
       });
 
+    const liveUsernames = new Set(activeLiveSessions.map(s => s.username));
+
     const { date, month, year, dayOfYear, timeframe, search } = req.query;
-    let filtered = auditList;
+    let filtered = auditList.map(item => ({
+      ...item,
+      isLive: item.date === todayStr && liveUsernames.has(item.username)
+    }));
 
     // Timeframe filters
     if (timeframe === 'active_now') {
@@ -804,9 +832,18 @@ router.get('/admin/login-audit', authenticateToken, (req, res) => {
     const availableMonths = [...new Set(auditList.map(item => item.date ? item.date.substring(0, 7) : null).filter(Boolean))].sort().reverse();
     const availableYears = [...new Set(auditList.map(item => item.date ? item.date.substring(0, 4) : null).filter(Boolean))].sort().reverse();
 
-    const todayCount = auditList.filter(item => item.date === todayStr).length;
-    const monthCount = auditList.filter(item => item.date && item.date.startsWith(thisMonthStr)).length;
-    const yearCount = auditList.filter(item => item.date && item.date.startsWith(String(thisYear))).length;
+    const todayCount = Math.max(
+      auditList.filter(item => item.date === todayStr).length,
+      activeLiveSessions.length
+    );
+    const monthCount = Math.max(
+      auditList.filter(item => item.date && item.date.startsWith(thisMonthStr)).length,
+      todayCount
+    );
+    const yearCount = Math.max(
+      auditList.filter(item => item.date && item.date.startsWith(String(thisYear))).length,
+      monthCount
+    );
 
     res.status(200).json({
       logs: filtered,
@@ -816,7 +853,7 @@ router.get('/admin/login-audit', authenticateToken, (req, res) => {
         todayCount,
         monthCount,
         yearCount,
-        allCount: auditList.length,
+        allCount: Math.max(auditList.length, yearCount),
         todayDayOfYear
       },
       totalCount: filtered.length,
