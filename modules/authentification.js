@@ -868,4 +868,97 @@ router.get('/admin/login-audit', authenticateToken, (req, res) => {
   }
 });
 
+// Admin endpoint: Fetch current secret keys for account creation
+router.get('/admin/account-keys', authenticateToken, (req, res) => {
+  try {
+    const username = req.user.username;
+    const currentUser = req.app.locals.users.find(u => u.username === username);
+    if (!currentUser || (currentUser.accountType !== 'admin' && currentUser.type !== 'secret')) {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs.' });
+    }
+
+    res.status(200).json({
+      secretAdminAccountKey: req.app.locals.secretAdminAccountKey || process.env.SECRET_ADMIN_ACCOUNT_KEY || 'msged_admin_secret_key',
+      secretPassword: req.app.locals.secretPassword || process.env.SECRET_PASSWORD || 'msged_secret_password',
+      secretKey: req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026'
+    });
+  } catch (err) {
+    console.error('Error fetching account keys:', err);
+    res.status(500).json({ message: 'Erreur lors de la récupération des clés de sécurité' });
+  }
+});
+
+// Admin endpoint: Update secret keys for account creation
+router.put('/admin/account-keys', authenticateToken, (req, res) => {
+  try {
+    const username = req.user.username;
+    const currentUser = req.app.locals.users.find(u => u.username === username);
+    if (!currentUser || (currentUser.accountType !== 'admin' && currentUser.type !== 'secret')) {
+      return res.status(403).json({ message: 'Accès réservé aux administrateurs.' });
+    }
+
+    const { secretAdminAccountKey, secretPassword, secretKey } = req.body;
+
+    if (!secretAdminAccountKey || typeof secretAdminAccountKey !== 'string' || secretAdminAccountKey.trim().length === 0) {
+      return res.status(400).json({ message: 'La clé de création administrateur ne peut pas être vide.' });
+    }
+
+    if (!secretPassword || typeof secretPassword !== 'string' || secretPassword.trim().length === 0) {
+      return res.status(400).json({ message: 'Le code secret pour comptes (département et membre) ne peut pas être vide.' });
+    }
+
+    const cleanAdminKey = secretAdminAccountKey.trim();
+    const cleanPassword = secretPassword.trim();
+    const cleanSecretKey = secretKey && typeof secretKey === 'string' && secretKey.trim().length > 0
+      ? secretKey.trim()
+      : req.app.locals.secretKey;
+
+    // Update in-memory runtime app.locals immediately
+    req.app.locals.secretAdminAccountKey = cleanAdminKey;
+    req.app.locals.secretPassword = cleanPassword;
+    if (cleanSecretKey) {
+      req.app.locals.secretKey = cleanSecretKey;
+    }
+
+    // Persist to .env file
+    const envPath = path.join(__dirname, '..', '.env');
+    let envContent = '';
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, 'utf8');
+    }
+
+    const updates = {
+      SECRET_ADMIN_ACCOUNT_KEY: cleanAdminKey,
+      SECRET_PASSWORD: cleanPassword,
+      JWT_SECRET: cleanSecretKey
+    };
+
+    for (const [k, v] of Object.entries(updates)) {
+      process.env[k] = v;
+      const regex = new RegExp(`^${k}=.*$`, 'm');
+      if (regex.test(envContent)) {
+        envContent = envContent.replace(regex, `${k}=${v}`);
+      } else {
+        envContent += (envContent.endsWith('\n') || envContent.length === 0 ? '' : '\n') + `${k}=${v}\n`;
+      }
+    }
+
+    fs.writeFileSync(envPath, envContent, 'utf8');
+
+    console.log(`[SECURITY] Secret keys for account creation updated by admin "${username}"`);
+
+    res.status(200).json({
+      message: 'Clés de création de compte mises à jour avec succès.',
+      keys: {
+        secretAdminAccountKey: req.app.locals.secretAdminAccountKey,
+        secretPassword: req.app.locals.secretPassword,
+        secretKey: req.app.locals.secretKey
+      }
+    });
+  } catch (err) {
+    console.error('Error updating account keys:', err);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour des clés de sécurité' });
+  }
+});
+
 module.exports = router;
