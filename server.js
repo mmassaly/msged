@@ -203,6 +203,17 @@ app.use('/api/updates',updateRoutes);
 
 app.use('/api/retrievals',retrievalRoutes);
 
+// PDF.js worker static route
+app.get('/pdf.worker.min.mjs', (req, res) => {
+    const workerFile = path.join(__dirname, 'pdf.worker.min.mjs');
+    if (fs.existsSync(workerFile)) {
+        res.setHeader('Content-Type', 'text/javascript');
+        res.sendFile(workerFile);
+    } else {
+        res.redirect('https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs');
+    }
+});
+
 // Server start
 app.listen(PORT, () => {
     //console.log(`Server running on port ${PORT}`);
