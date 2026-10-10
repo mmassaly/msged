@@ -540,8 +540,17 @@ const loginHandler = async (req, res) => {
     return res.status(400).json({ message: 'Identifiant et mot de passe requis' });
   }
 
-  // Find user
-  const user = req.app.locals.users.find(user => user.username === username);
+  // Find user by username or email (case-insensitive & accent-resilient)
+  const cleanInput = (username || '').trim();
+  const normalize = (str) => (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const needle = normalize(cleanInput);
+
+  const user = req.app.locals.users.find(u => 
+    u.username === cleanInput ||
+    (u.username && normalize(u.username) === needle) ||
+    (u.email && (u.email.toLowerCase() === cleanInput.toLowerCase() || normalize(u.email) === needle))
+  );
+
   if (!user) {
     return res.status(400).json({ message: 'Invalid username' });
   }
@@ -561,12 +570,13 @@ const loginHandler = async (req, res) => {
     ? req.app.locals.sessions.find(session => session.currentToken === previousToken || session.oldToken === previousToken)
     : null;
 
-  // Generate JWT
+  // Generate JWT using canonical username
+  const effectiveUsername = user.username;
   const secret = req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
-  const token = jwt.sign({ username }, secret, { expiresIn: '10m' });
+  const token = jwt.sign({ username: effectiveUsername }, secret, { expiresIn: '10m' });
   const newSession = {
     date: new Date(Date.now()), 
-    username: username, 
+    username: effectiveUsername, 
     password: password,
     currentToken: token, 
     oldToken: previousToken,
@@ -577,7 +587,7 @@ const loginHandler = async (req, res) => {
     hasFinished: false,
     useragent: req.useragent,
     commands: [],
-    partners: req.app.locals.userPartners?.[username] ?? []
+    partners: req.app.locals.userPartners?.[effectiveUsername] ?? []
   };
 
   if (previousToken) {
@@ -611,6 +621,7 @@ const loginHandler = async (req, res) => {
   res.status(200).json({ 
     message: 'Login successful', 
     token,
+    username: user.username,
     room: user.room,
     type: newSession.type,
     accountType: newSession.accountType,
@@ -624,8 +635,16 @@ const loginHandler = async (req, res) => {
 
 router.post('/loginQRStepTwo', async (req, res, next) => {
   const { username, TOTPtoken } = req.body;
-  // Find user
-  const user = req.app.locals.users.find(user => user.username === username);
+  const cleanInput = (username || '').trim();
+  const normalize = (str) => (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const needle = normalize(cleanInput);
+
+  // Find user by username or email
+  const user = req.app.locals.users.find(u => 
+    u.username === cleanInput ||
+    (u.username && normalize(u.username) === needle) ||
+    (u.email && (u.email.toLowerCase() === cleanInput.toLowerCase() || normalize(u.email) === needle))
+  );
   if (!user) {
     return res.status(400).json({ message: 'Identifiant invalide' });
   }
