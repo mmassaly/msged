@@ -3,6 +3,7 @@
 
 const roomUtil = require('./roomUtil');
 const roomUpdates = roomUtil.roomUpdates;
+const allRoomUpdated = roomUtil.allRoomUpdated;
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -120,33 +121,37 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
     if (user.username === oldUser.username) {
       return {
         ...user,
-        username: newUser.username? newUser.username: user.username,
-        name: newUser.name? newUser.name: user.name,
-        email: newUser.email? newUser.email: user.email,
-        role: newUser.role? newUser.role: user.role,
-	      room: newUser.room? newUser.room : session.room,
-        type: newUser.type? newUser.type: session.type,
-        imgSource: req.imgpath,
-        accountType: newUser.accountType? newUser.accountType: user.accountType,
-        password: newUser.password && newUser.password.trim().length > 0  ? 
-	bcrypt.hashSync(newUser.password, 10) : user.password
+        username: newUser.username ? newUser.username : user.username,
+        name: newUser.name ? newUser.name : user.name,
+        email: newUser.email ? newUser.email : user.email,
+        role: newUser.role ? newUser.role : user.role,
+        room: newUser.room ? newUser.room : user.room,
+        type: newUser.type ? newUser.type : user.type,
+        imgSource: req.imgpath ? req.imgpath : (newUser.imgSource || user.imgSource),
+        accountType: newUser.accountType ? newUser.accountType : user.accountType,
+        password: newUser.password && newUser.password.trim().length > 0 ? 
+          bcrypt.hashSync(newUser.password, 10) : user.password
       };
     }
    
     return user;
   });
-  req.app.locals.sessions = req.app.locals.sessions.map(session => {
-    if (session.username === oldUser.username) {  
-      return {
-        ...session,
-        username: newUser.username? newUser.username : session.username,
-        password: newUser.password && newUser.password.trim().length > 0 ? bcrypt.hashSync(newUser.password, 10) : session.password,
-        room: newUser.room? newUser.room : session.room,
-        type: newUser.type? newUser.type: session.type,
-        currentToken: newUser.token?newUser.token:session.currentToken, // or Keep the same token
-      };}
-	return session;
+  if (req.app.locals.sessions && Array.isArray(req.app.locals.sessions)) {
+    req.app.locals.sessions = req.app.locals.sessions.map(session => {
+      if (session.username === oldUser.username) {  
+        return {
+          ...session,
+          username: newUser.username ? newUser.username : session.username,
+          password: newUser.password && newUser.password.trim().length > 0 ? bcrypt.hashSync(newUser.password, 10) : session.password,
+          room: newUser.room ? newUser.room : session.room,
+          type: newUser.type ? newUser.type : session.type,
+          accountType: newUser.accountType ? newUser.accountType : session.accountType,
+          currentToken: newUser.token ? newUser.token : session.currentToken,
+        };
+      }
+      return session;
     });
+  }
   
   const editorUsername = req.user?.username;
   const isITAdmin = editorUsername === 'MMDev-39' || req.user?.role === 'itadmin' || req.body?.isITAdmin === true || req.body?.isITAdmin === 'true';
@@ -171,10 +176,15 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
     db.saveUserToDB(targetUser);
   }
 
-  var command ={entryparams:{fieldName:"user_info",operation:"update_user_info"},
-  command:{oldUser, newUser}};
+  var command = {
+    entryparams: { fieldName: "user_info", operation: "update_user_info" },
+    command: { oldUser, newUser }
+  };
          
-  roomUpdates(req,room,command);
+  allRoomUpdated(req, command);
+  if (room) {
+    try { roomUpdates(req, room, command); } catch(e) {}
+  }
   res.status(200).json({ message: 'User updated successfully' });
 });
 
@@ -215,38 +225,45 @@ function getChangedProps(user, newUser)
 }
 
 
-router.delete('/signup',authenticateToken ,async (req, res) => {
+router.delete('/signup', authenticateToken, async (req, res) => {
   var { username, room } = req.body;
   
-  if(!req.app.locals.users || !Array.isArray(req.app.locals.users)) {
+  if (!req.app.locals.users || !Array.isArray(req.app.locals.users)) {
     return res.status(500).json({ message: "Données sur l'utilisateur ne sont pas disponibles" });
   }
-  const userFound = req.app.locals.users.find(user => 
-    user.username == username);
-  if(!userFound)
-  {
-    return res.status(404).json({ message: "L'utilisateur n'éxiste pas." });
+  const userFound = req.app.locals.users.find(user => user.username == username);
+  if (!userFound) {
+    return res.status(404).json({ message: "L'utilisateur n'existe pas." });
   }
 
-  var command ={entryparams:{fieldName:"user_info",operation:"delete_user_info"},
-  command:{username,room }};
+  const effectiveRoom = room || userFound.room || "principal";
+  var command = {
+    entryparams: { fieldName: "user_info", operation: "delete_user_info" },
+    command: { username, room: effectiveRoom }
+  };
 
-  const  foundValueIndex = req.app.locals.users.findIndex(value => value.username == username
-    && value.room == room);
-    if(foundValueIndex >= 0)
-  {
-    req.app.locals.users.splice(foundValueIndex,1);
+  const foundValueIndex = req.app.locals.users.findIndex(value => value.username == username);
+  if (foundValueIndex >= 0) {
+    req.app.locals.users.splice(foundValueIndex, 1);
     const users = JSON.stringify(req.app.locals.users.map(user => {
-      let newUser = user;
+      let newUser = { ...user };
       delete newUser["partners"];
       return newUser;
     }), null, 2);
     fs.writeFileSync("./modules/Data/users.json", users);
     db.deleteUserFromDB(username);
-  }     
-  roomUpdates(req,room,command);
-  res.status(200).json({ message: "L'utilisateur a été enlevé sans problèmes." });
+  }
 
+  // Remove any active session for the deleted user
+  if (req.app.locals.sessions && Array.isArray(req.app.locals.sessions)) {
+    req.app.locals.sessions = req.app.locals.sessions.filter(s => s.username !== username);
+  }
+
+  allRoomUpdated(req, command);
+  if (effectiveRoom) {
+    try { roomUpdates(req, effectiveRoom, command); } catch(e) {}
+  }
+  res.status(200).json({ message: "L'utilisateur a été supprimé avec succès." });
 });
 router.delete('/partner',authenticateToken, (req, res) => {
   const {name} = req.body;

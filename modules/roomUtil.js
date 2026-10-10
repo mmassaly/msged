@@ -74,33 +74,21 @@ function updateRoomsAndSessions(req,oldPath,newPath)
 }        
 function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=undefined)
 {
-    //console.log(req.app.locals.roomDic);
-    //console.log(room);
-    const roomsReferenced = req.app.locals.roomDic[room];
-    console.log(roomsReferenced);
-    //console.log(command);
+    if (!room) {
+        allRoomUpdated(req, command);
+        return;
+    }
+    const roomsReferenced = (req.app.locals.roomDic && req.app.locals.roomDic[room]) ? req.app.locals.roomDic[room] : [];
     if(command.isAdditionalCommand)
     {
         console.log("Looking for a session for additionalCommand***************");
         console.log(command);
     }
-    //console.log(req.app.locals.roomDic);
-    //console.log(room);
-    //console.log(req.app.locals.roomDic[room]);
-    //console.log("Rooms referenced...");
-    //console.log(roomsReferenced);
-    //console.log("Rooms referenced...");
-    /*console.log("Inside room updates");
-    console.log(roomsReferenced);
-    console.log("--------------------------");*/
     
-  
+    if (!req.app.locals.sessions || !Array.isArray(req.app.locals.sessions)) return;
 
     req.app.locals.sessions.forEach(session => 
     {
-        //console.log("session room 1"+session.room.replace("//", path.sep));
-        //console.log("session room 2"+session.room);
-        //console.log("session room 3"+session.room.replace('\\',path.sep).replace("//", path.sep));
         if(command.isAdditionalCommand)
         {
             console.log("session room "+session.room);
@@ -108,14 +96,12 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
         }
         try
         {
-            if (roomsReferenced.find(roomInList => roomInList.replace('\\',path.sep) == session.room.replace('\\',path.sep).replace("//", path.sep)) || session.room == room )
+            const isMatch = (Array.isArray(roomsReferenced) && roomsReferenced.find(roomInList => 
+                roomInList.replace(/\\/g, path.sep).replace(/\/\//g, path.sep) == (session.room || '').replace(/\\/g, path.sep).replace(/\/\//g, path.sep)
+            )) || session.room == room;
+
+            if (isMatch)
             {   
-                /*console.log("Added command.................");
-                console.log(command);
-                console.log("Added command.................");
-                console.log("to session ..........");
-                console.log(session);
-                console.log("to session ..........");*/
                 if(checkSession && checkSessionUserName)
                 {
                     if(session.username != checkSessionUserName)
@@ -125,6 +111,7 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
                     }
                 }
                 
+                if (!session.commands) session.commands = [];
                 session.commands.push(command);
                 console.trace(session.commands);
                 if ( command.isAdditionalCommand )
@@ -141,11 +128,8 @@ function roomUpdates(req,room,command,checkSession = false,checkSessionUserName=
         {
             console.trace(err);
             console.log(room);console.log(roomsReferenced);
-            throw err;
         }
     });
-    if ( command.isAdditionalCommand )
-     console.log("Looking for a session for additionalCommand***************");
 }
 
 

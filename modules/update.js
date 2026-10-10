@@ -101,16 +101,39 @@ router.get('/', authenticateToken, (req, res) => {
         res.status(401).json({message:"You must login."});
         return;
     }
-    const interval = setInterval(()=>{  
-        if(yourSession.commands.length > 0)
-        {
-            //console.log(req.app.locals.sessions);
-            res.json({message:"Il y a des mises à jours.",commands:
-                yourSession.commands.map(command => ({...command}))});
-            console.trace(`Sending ${yourSession.commands.length} commands`,yourSession.commands);
-            clearInterval(interval);
+
+    let isDone = false;
+    let interval = null;
+    let timeout = null;
+
+    const cleanup = () => {
+        if (!isDone) {
+            isDone = true;
+            if (interval) clearInterval(interval);
+            if (timeout) clearTimeout(timeout);
         }
-    },200);
+    };
+
+    req.on('close', cleanup);
+
+    interval = setInterval(() => {  
+        if (yourSession.commands && yourSession.commands.length > 0) {
+            cleanup();
+            if (!res.headersSent) {
+                res.json({
+                    message: "Il y a des mises à jours.",
+                    commands: yourSession.commands.map(command => ({...command}))
+                });
+            }
+        }
+    }, 200);
+
+    timeout = setTimeout(() => {
+        cleanup();
+        if (!res.headersSent) {
+            res.json({ message: "Aucune mise à jour.", commands: [] });
+        }
+    }, 25000);
 });
 
 module.exports = router;

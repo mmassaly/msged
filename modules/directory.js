@@ -918,113 +918,127 @@ function deleteCVHelper(foundDir,req)
     }
 }
 // Delete a directory
+// Delete a directory
 router.delete('/', authenticateToken, (req, res) => {
-    var { path, parentPath } = req.query;
-    //removes the patn from the file repertory
-    //adds to  session updates array the removal comment
-    /*secrets array and archives array and partnersDic
-     and partnersDicReverse are not affected meaning if the path it recreated
-      it inherits the properties is Archive or is Secret*/
-    console.log("Deleting directory at path: ", decodeURIComponent(path)); 
-    console.log("Deleting a directory with parent path: ", decodeURI(parentPath)); 
-    path = decodeURIComponent(path);
-    parentPath = decodeURIComponent(parentPath);
-    const directories =  mapDirectory("./",parentPath,"",req);
-    console.log(directories? Object.entries(directories):"No directories found");
-    let stack = [...directories.subdirectories];
-    while(stack.length > 0)
-    {
-        let subdir = stack.shift();
-        if(req.app.locals.archives.find(value=> path.join("./",subdir.path).includes(value) ))
-        {
-            res.status(400).json({message:"Ce répertoire contient un dossier archivé. Vous ne pouvez pas le supprimer."});
-            stack.splice(0,stack.length);
-            return;
-        }
-        stack.push(...subdir.subdirectories);
+    var { path: targetPath, parentPath } = req.query;
+    if (!targetPath) {
+        return res.status(400).json({ error: 'Chemin requis' });
     }
+    targetPath = decodeURIComponent(targetPath);
+    parentPath = parentPath ? decodeURIComponent(parentPath) : "principal";
+
+    console.log("Deleting directory at path: ", targetPath); 
+    console.log("Deleting a directory with parent path: ", parentPath); 
+
+    const directories = mapDirectory("./", parentPath, "", req) || mapDirectory("./", "principal", "", req);
+    if (directories && directories.subdirectories) {
+        let stack = [...directories.subdirectories];
+        while (stack.length > 0) {
+            let subdir = stack.shift();
+            if (req.app.locals.archives && req.app.locals.archives.find(value => pathObj.join("./", subdir.path).includes(value))) {
+                return res.status(400).json({ message: "Ce répertoire contient un dossier archivé. Vous ne pouvez pas le supprimer." });
+            }
+            if (subdir.subdirectories) {
+                stack.push(...subdir.subdirectories);
+            }
+        }
+    }
+
     const removeDirectory = (dirs) => {
-     
-        const foundDir = recursiveFindDir(dirs,path);
+        let foundDir = recursiveFindDir(dirs, targetPath);
         console.log("Found directory to delete: ", foundDir);
-        if (foundDir && foundDir.path != "principal") {
-            console.log("Attempting to delete directory: ", foundDir.path);
-            try
-            {
-                fs.rmSync(pathObj.join("./", foundDir.path), { recursive: true, force: true });
-                deleteCVHelper(foundDir,req);
-                var command = {entryparams:{fieldName:"directories",operation:"delete_directory"}
-                    ,command:{path:path,name:foundDir.name,isDirectory:true,parentPath:foundDir.parentPath}};
-                roomUpdates(req,path,command);
-                
+
+        const normTarget = targetPath.replace(/\\/g, '/').replace(/\/$/, '');
+        if (normTarget === "principal") {
+            return "denied";
+        }
+
+        const dirOnDisk = pathObj.join("./", targetPath);
+        const existsOnDisk = fs.existsSync(dirOnDisk);
+
+        if (foundDir || existsOnDisk) {
+            const dirName = foundDir ? foundDir.name : pathObj.basename(targetPath);
+            const dirParent = foundDir ? foundDir.parentPath : parentPath;
+            console.log("Attempting to delete directory from disk: ", dirOnDisk);
+
+            try {
+                if (existsOnDisk) {
+                    fs.rmSync(dirOnDisk, { recursive: true, force: true });
+                }
+                if (foundDir) {
+                    deleteCVHelper(foundDir, req);
+                }
+
+                var command = {
+                    entryparams: { fieldName: "directories", operation: "delete_directory" },
+                    command: { path: targetPath, name: dirName, isDirectory: true, parentPath: dirParent }
+                };
+
+                roomUpdates(req, dirParent, command);
+                allRoomUpdated(req, command);
+
                 let foundChangesInPartnersDic = false;
-                let updatedDic = Object.fromEntries(
-                    Object.entries(req.app.locals.partnersDic).map(([key, value]) =>{ 
-                            let newValue = value.filter(val => !val.path.includes(path) || !val.parentPath.includes(path));
-                            if(newValue.length != value.length)
+                if (req.app.locals.partnersDic) {
+                    let updatedDic = Object.fromEntries(
+                        Object.entries(req.app.locals.partnersDic).map(([key, value]) => { 
+                            let newValue = value.filter(val => !val.path.includes(targetPath) || !val.parentPath.includes(targetPath));
+                            if (newValue.length != value.length)
                                 foundChangesInPartnersDic = true;
                             return [key, newValue]; 
-                        }
-                    )
-                );
-
-                if(foundDir && req.app.locals.partnersDicReverse[foundDir.path])
-                {
-                    delete req.app.locals.partnersDicReverse[foundDir.path];
+                        })
+                    );
+                    if (foundChangesInPartnersDic) {
+                        req.app.locals.partnersDic = updatedDic;
+                        fs.writeFileSync('./modules/Data/partnersDic.json', JSON.stringify(req.app.locals.partnersDic));
+                    }
                 }
 
-                if(foundChangesInPartnersDic)
-                {
-                    req.app.locals.partnersDic = updatedDic;
-                    fs.writeFileSync('./modules/Data/partnersDic.json',JSON.stringify(req.app.locals.partnersDic));
+                if (req.app.locals.partnersDicReverse && req.app.locals.partnersDicReverse[targetPath]) {
+                    delete req.app.locals.partnersDicReverse[targetPath];
                 }
-                if(foundDir.parentPath == "principal" && req.app.locals.departements.findIndex(value=> value == foundDir.name) >= 0)
-                {
-                    req.app.locals.departements.splice(req.app.locals.departements.findIndex(value=> value == foundDir.name),1);
-                    fs.writeFileSync('./modules/Data/departements.json',JSON.stringify(req.app.locals.departements));
+
+                if (dirParent === "principal" && req.app.locals.departements) {
+                    const deptIndex = req.app.locals.departements.findIndex(value => value === dirName);
+                    if (deptIndex >= 0) {
+                        req.app.locals.departements.splice(deptIndex, 1);
+                        fs.writeFileSync('./modules/Data/departements.json', JSON.stringify(req.app.locals.departements));
+                    }
                 }
-                console.log(`Directory ${foundDir.path} deleted successfully.`);
+                console.log(`Directory ${targetPath} deleted successfully.`);
                 return true;
-            }catch(err)
-            {
+            } catch (err) {
                 console.error("Error deleting directory: ", err);
             }
         }
-        else if (foundDir.path == "principal")
-        {
-            return "denied"    
-        }
         return false;
     };
+
     const success = removeDirectory(directories);
-    if ( !success ) 
-    {
+    if (!success) {
         return res.status(400).json({ error: 'Directory not found' });
-    }
-    else if ( success == "denied" )
-    {
+    } else if (success === "denied") {
         return res.status(403).json({ error: 'Cannot delete principal directory' });
     }
 
     res.json({ message: 'Directory deleted successfully!' });
 });
 
-function recursiveFindDir (dir,givenPath){ 
-    if(dir.path == givenPath)
-        return dir;
-    var subdirfound = dir.subdirectories.find(subdir =>{console.log(subdir.path+'='+givenPath+" is "+ (subdir.path == givenPath)); return subdir.path == givenPath});
-    if(subdirfound !=  undefined)
-    {
-        return subdirfound;
+function recursiveFindDir(dir, givenPath) { 
+    if (!dir) return undefined;
+    const normDir = (dir.path || '').replace(/\\/g, '/').replace(/\/$/, '');
+    const normGiven = (givenPath || '').replace(/\\/g, '/').replace(/\/$/, '');
+    if (normDir === normGiven) return dir;
+
+    if (dir.subdirectories && Array.isArray(dir.subdirectories)) {
+        const directFound = dir.subdirectories.find(subdir => (subdir.path || '').replace(/\\/g, '/').replace(/\/$/, '') === normGiven);
+        if (directFound) return directFound;
+
+        for (const element of dir.subdirectories) {
+            const nested = recursiveFindDir(element, givenPath);
+            if (nested) return nested;
+        }
     }
-    
-    var accumulation = dir.subdirectories.reduce((acc,curr)=> {acc.push(curr);return acc;},[]);
-    var foundIntoAccumulation = undefined;
-    accumulation.forEach(element => {
-        if(foundIntoAccumulation == undefined)
-            foundIntoAccumulation = recursiveFindDir(element,givenPath);
-    });
-    return foundIntoAccumulation;
+    return undefined;
 }
 const setKeyValueofSubdirectories = (dir,key,value)=>
 {

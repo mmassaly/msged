@@ -48,8 +48,8 @@ async function main() {
         {
             name: "Mamadou Massaly",
             username: "MMDev-39",
-            email: "mamadoumassaly@msasenegal.com",
-            password: passwordHash,
+            email: "massalymamadou@gmail.com",
+            password: "$2b$10$WRt8j9XOeTr7mD8GCK9SLeqXOaIDeYhBbHgIHRY7GN63sruDw1CDe",
             room: "principal",
             identifier: "MR",
             accountType: "admin",
@@ -187,7 +187,7 @@ async function main() {
             usersMap.set(target.username, {
                 ...existing,
                 ...target,
-                password: passwordHash
+                password: target.password || passwordHash
             });
         } else {
             usersMap.set(target.username, target);
@@ -227,3 +227,4 @@ main().catch(err => {
     console.error(err);
     process.exit(1);
 });
+
