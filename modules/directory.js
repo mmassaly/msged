@@ -129,58 +129,103 @@ function writeFile(path,data)
 }  
 
 const authenticateToken = (req, res, next) => {
+    if (req.method === 'OPTIONS') return next();
     const authHeader = req.headers['authorization'];
-    //console.log(req.headers);
     const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
     if (token == undefined) return res.sendStatus(401);
-    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
-    if(!yourSession)
-    {
-        res.sendStatus(403);//json({ message: 'Invalid username' });;
-        return;
-    } 
 
-    if(req.method != "GET" && (yourSession.accountType === "partner" || yourSession.accountType === "host" || 
-        (yourSession.accountType !== "admin" && yourSession.accountType !== "user" )) )
-    {
-        res.status(403).json({ message: 'Unauthorized to perform this action' });
-        return;
-    }
-    jwt.verify(token, req.app.locals.secretKey, (err, user) => {
-        if (err){ 
+    const secret = req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
+    jwt.verify(token, secret, (err, decoded) => {
+        if (err) {
             return res.sendStatus(403);
-        }//json({ message: 'Token not matched' });;
-        req.user = user;
+        }
+        req.user = decoded;
+        const targetUsername = userName || decoded.username;
+        if (!req.app.locals.sessions) req.app.locals.sessions = [];
+        let yourSession = req.app.locals.sessions.find(s => 
+            s.username === targetUsername && (s.currentToken === token || s.oldTokens?.includes(token))
+        );
+        const foundUser = req.app.locals.users?.find(u => u.username === targetUsername);
+        if (!yourSession && foundUser) {
+            yourSession = {
+                date: new Date(),
+                lastActive: new Date(),
+                username: foundUser.username,
+                currentToken: token,
+                oldTokens: [],
+                type: foundUser.type || (foundUser.accountType === 'admin' ? 'secret' : 'basic'),
+                accountType: foundUser.accountType || 'user',
+                room: foundUser.room || 'principal',
+                hasFinished: false,
+                useragent: req.useragent,
+                commands: [],
+                partners: req.app.locals.userPartners?.[foundUser.username] ?? []
+            };
+            req.app.locals.sessions.push(yourSession);
+            console.log(`[SESSION RECOVERED] Active session restored for ${foundUser.username} in directory`);
+        }
+        if (!yourSession) {
+            return res.sendStatus(403);
+        }
+        yourSession.lastActive = new Date();
         req.session = yourSession;
+
+        if (req.method != "GET" && (yourSession.accountType === "partner" || yourSession.accountType === "host" || 
+            (yourSession.accountType !== "admin" && yourSession.accountType !== "user" ))) {
+            return res.status(403).json({ message: 'Unauthorized to perform this action' });
+        }
         next();
     });
 };
+
 const authenticateTokenPath = (req, res, next) => {
+    if (req.method === 'OPTIONS') return next();
     const {authHeader} = req.params;
-    //console.log(req.headers);
     const token = authHeader && authHeader.split(' ')[1];
     const userName = authHeader && authHeader.split(' ')[0];
     if (token == undefined) return res.sendStatus(401);
-    const yourSession = req.app.locals.sessions.filter(session => session.username == userName).find( session => session.currentToken == token);
-    if(!yourSession)
-    {
-        res.sendStatus(403);//json({ message: 'Invalid username' });;
-        return;
-    } 
 
-    if(req.method != "GET" && (yourSession.accountType === "partner" || yourSession.accountType === "host" || 
-        (yourSession.accountType !== "admin" && yourSession.accountType !== "user" )) )
-    {
-        res.status(403).json({ message: 'Unauthorized to perform this action' });
-        return;
-    }
-    jwt.verify(token, req.app.locals.secretKey, (err, user) => {
-        if (err){ 
+    const secret = req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
+    jwt.verify(token, secret, (err, decoded) => {
+        if (err) {
             return res.sendStatus(403);
-        }//json({ message: 'Token not matched' });;
-        req.user = user;
+        }
+        req.user = decoded;
+        const targetUsername = userName || decoded.username;
+        if (!req.app.locals.sessions) req.app.locals.sessions = [];
+        let yourSession = req.app.locals.sessions.find(s => 
+            s.username === targetUsername && (s.currentToken === token || s.oldTokens?.includes(token))
+        );
+        const foundUser = req.app.locals.users?.find(u => u.username === targetUsername);
+        if (!yourSession && foundUser) {
+            yourSession = {
+                date: new Date(),
+                lastActive: new Date(),
+                username: foundUser.username,
+                currentToken: token,
+                oldTokens: [],
+                type: foundUser.type || (foundUser.accountType === 'admin' ? 'secret' : 'basic'),
+                accountType: foundUser.accountType || 'user',
+                room: foundUser.room || 'principal',
+                hasFinished: false,
+                useragent: req.useragent,
+                commands: [],
+                partners: req.app.locals.userPartners?.[foundUser.username] ?? []
+            };
+            req.app.locals.sessions.push(yourSession);
+            console.log(`[SESSION RECOVERED] Active session restored for ${foundUser.username} in directory path`);
+        }
+        if (!yourSession) {
+            return res.sendStatus(403);
+        }
+        yourSession.lastActive = new Date();
         req.session = yourSession;
+
+        if (req.method != "GET" && (yourSession.accountType === "partner" || yourSession.accountType === "host" || 
+            (yourSession.accountType !== "admin" && yourSession.accountType !== "user" ))) {
+            return res.status(403).json({ message: 'Unauthorized to perform this action' });
+        }
         next();
     });
 };
@@ -389,48 +434,103 @@ router.get('/', authenticateToken, (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=UTF-8');
     res.json(directories? directories: {message:"Pas de dossier trouvé"});
 });
-router.get("/file/:authHeader/*",authenticateTokenPath,(req,res)=>{
-    const filePath = path.join('./',decodeURIComponent(req.params[0]));
-    const mimeType = mime.lookup(filePath);
-    console.log(mimeType);
-    //mime.getType(filePath) causes issues
-    //res.setHeader({'Content-Type':mimeType}); //causes issues in clients view
-    res.set('Content-Type',mimeType);
-    res.set('Content-Length',readSize(filePath));
-    console.log(filePath);
-    /*
-    res.write(readFile(filePath));
-    res.end();*/
-    const readStream = readFile2(filePath);
-    if(readStream){
-        console.log(`sending ${filePath}...`);
-        readStream.pipe(res);
-    }
-    else{
-            console.log(`File ${filePath} not found.`);
-            res.end();
+
+function resolveActualFilePath(requestedPath) {
+    if (!requestedPath) return null;
+    let clean = decodeURIComponent(requestedPath).replaceAll('\\', '/');
+    let candidates = [
+        path.join('./', clean),
+        path.join('./FileDirServer', clean),
+        path.resolve(clean)
+    ];
+
+    for (const c of candidates) {
+        if (fs.existsSync(c) && !fs.statSync(c).isDirectory()) {
+            return c;
         }
-});
-router.get('/file', authenticateToken, (req, res) => {
-   const filePath = path.join('./',decodeURIComponent(req.query.path));
-   const mimeType = mime.lookup(filePath);
-   console.log(mimeType);
-   //mime.getType(filePath) causes issues
-   //res.setHeader({'Content-Type':mimeType}); //causes issues in clients view
-   res.set('Content-Type',mimeType);
-   res.set('Content-Length',readSize(filePath));
-   console.log(filePath);
-   /*
-   res.write(readFile(filePath));
-   res.end();*/
-   const readStream = readFile2(filePath);
-   if(readStream)
-    readStream.pipe(res);
-   else{
-        console.log(`File ${filePath} not found.`);
-        res.end();
     }
-   console.log("done");
+
+    // Try substituting NUMERISATION <-> Archivage
+    let altClean = clean.includes('/NUMERISATION/') ? clean.replace('/NUMERISATION/', '/Archivage/') : (clean.includes('/Archivage/') ? clean.replace('/Archivage/', '/NUMERISATION/') : null);
+    if (altClean) {
+        let altCandidates = [path.join('./', altClean), path.join('./FileDirServer', altClean)];
+        for (const c of altCandidates) {
+            if (fs.existsSync(c) && !fs.statSync(c).isDirectory()) {
+                return c;
+            }
+        }
+    }
+
+    const targetDir = path.dirname(path.join('./', altClean || clean));
+    const targetBase = path.basename(clean);
+    if (fs.existsSync(targetDir)) {
+        try {
+            const files = fs.readdirSync(targetDir);
+            const found = files.find(f => f === targetBase || f.endsWith('_' + targetBase) || f.includes(targetBase) || targetBase.includes(f));
+            if (found) {
+                return path.join(targetDir, found);
+            }
+        } catch(e) {}
+    }
+
+    function findRecursive(dir, needle) {
+        if (!fs.existsSync(dir)) return null;
+        try {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            for (const ent of entries) {
+                const full = path.join(dir, ent.name);
+                if (ent.isDirectory()) {
+                    const sub = findRecursive(full, needle);
+                    if (sub) return sub;
+                } else if (ent.name === needle || ent.name.endsWith('_' + needle) || ent.name.includes(needle)) {
+                    return full;
+                }
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    return findRecursive(path.join('./FileDirServer/principal'), targetBase) || findRecursive('./principal', targetBase);
+}
+
+router.get("/file/:authHeader/*", authenticateTokenPath, (req, res) => {
+    const rawPath = req.params[0];
+    const resolvedPath = resolveActualFilePath(rawPath);
+    if (!resolvedPath || !fs.existsSync(resolvedPath)) {
+        console.log(`File ${rawPath} not found.`);
+        return res.status(404).json({ message: "Fichier non trouvé" });
+    }
+    const mimeType = mime.lookup(resolvedPath) || 'application/octet-stream';
+    const fileSize = fs.statSync(resolvedPath).size;
+
+    res.set({
+        'Content-Type': mimeType,
+        'Content-Length': fileSize,
+        'Accept-Ranges': 'bytes'
+    });
+
+    const readStream = fs.createReadStream(resolvedPath);
+    readStream.pipe(res);
+});
+
+router.get('/file', authenticateToken, (req, res) => {
+    const rawPath = req.query.path;
+    const resolvedPath = resolveActualFilePath(rawPath);
+    if (!resolvedPath || !fs.existsSync(resolvedPath)) {
+        console.log(`File ${rawPath} not found.`);
+        return res.status(404).json({ message: "Fichier non trouvé" });
+    }
+    const mimeType = mime.lookup(resolvedPath) || 'application/octet-stream';
+    const fileSize = fs.statSync(resolvedPath).size;
+
+    res.set({
+        'Content-Type': mimeType,
+        'Content-Length': fileSize,
+        'Accept-Ranges': 'bytes'
+    });
+
+    const readStream = fs.createReadStream(resolvedPath);
+    readStream.pipe(res);
 });
 router.get('/officefile', (req, res) => {
    const filePath = path.join('./',req.query.path);

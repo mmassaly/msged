@@ -156,11 +156,27 @@ router.put('/signup',authenticateToken ,upload.single("imgSource"),async (req, r
   const editorUsername = req.user?.username;
   const isITAdmin = editorUsername === 'MMDev-39' || req.user?.role === 'itadmin' || req.body?.isITAdmin === true || req.body?.isITAdmin === 'true';
 
-  if (!isITAdmin && (oldUser.email || newUser.email)) {
+  // Check rate limiter config for global special admin email default
+  const rateLimiterModule = req.app.locals.rateLimiter || require('./rateLimiter');
+  const rlConfig = rateLimiterModule ? rateLimiterModule.getConfig() : null;
+  const defaultSendEmailForITAdmin = rlConfig?.specialAdminSendEmailDefault ?? false;
+
+  // Determine whether email notification should be sent
+  let shouldSendEmail = !isITAdmin;
+  if (isITAdmin) {
+    if (req.body?.sendNotificationEmail !== undefined) {
+      shouldSendEmail = req.body.sendNotificationEmail === true || req.body.sendNotificationEmail === 'true';
+    } else {
+      shouldSendEmail = defaultSendEmailForITAdmin;
+    }
+  }
+
+  if (shouldSendEmail && (oldUser.email || newUser.email)) {
     nodemailerCustom.notifyAccountChanges(!oldUser.email ? newUser.email : oldUser.email,
       getChangedProps(oldUser, newUser));
-  } else if (isITAdmin) {
-    console.log(`[ITadmin Privilege] ${editorUsername} edited user "${oldUser.username}" without sending email notification.`);
+    console.log(`[Email Notification] Email sent for account changes of user "${oldUser.username}" by ${editorUsername}.`);
+  } else if (isITAdmin && !shouldSendEmail) {
+    console.log(`[ITadmin Privilege] ${editorUsername} edited user "${oldUser.username}" without sending email notification (email suppressed by settings/choice).`);
   }
   
   console.log("Writting to file and synchronizing with MongoDB");
@@ -407,29 +423,27 @@ router.post('/signup', async (req, res) => {
 
 router.get('/logout', async (req, res) => {
   const authHeader = req.headers['authorization'];
-    //console.log(req.headers);
   const token = authHeader && authHeader.split(' ')[1];
   const username = authHeader && authHeader.split(' ')[0];
   
-  const userFound = req.app.locals.sessions.find(user=> user.username == username && user.currentToken == token && JSON.stringify(user.useragent) == JSON.stringify(req.useragent));
-  if(userFound)
-  {
-    userFound.hasFinished = true;
-    var index2  = req.app.locals.intervals.findIndex(obj=> obj.session == userFound);
-    if(index2>=0)
-    {
-      clearTimeout(req.app.locals.intervals[index2].timeoutValue);
-      req.app.locals.intervals.splice(index2,1);
-    }	
-    res.status(200).json({message:"Vous êtes déconnectés avec succès."});
-    const value = req.app.locals.sessions.findIndex(user => user == userFound);
-    if(value>=0)
-    req.app.locals.sessions.splice(value,1); 	
+  if (req.app.locals.sessions && Array.isArray(req.app.locals.sessions)) {
+    const userFound = req.app.locals.sessions.find(user => 
+      user.username === username && (user.currentToken === token || !token)
+    );
+    if (userFound) {
+      userFound.hasFinished = true;
+      const index2 = req.app.locals.intervals?.findIndex(obj => obj.session === userFound);
+      if (index2 !== undefined && index2 >= 0) {
+        clearTimeout(req.app.locals.intervals[index2].timeoutValue);
+        req.app.locals.intervals.splice(index2, 1);
+      }
+      const value = req.app.locals.sessions.indexOf(userFound);
+      if (value >= 0) {
+        req.app.locals.sessions.splice(value, 1);
+      }
+    }
   }
-  else
-  {
-    	res.status(404).json({message:"Utilisateur non retrouvé"});
-  }
+  res.status(200).json({ message: "Vous êtes déconnectés avec succès." });
 });
 const generateQRCode =   async (req, res) => {
   const  {username,password}  = req.body;
@@ -590,7 +604,7 @@ const loginHandler = async (req, res) => {
   // Generate JWT using canonical username
   const effectiveUsername = user.username;
   const secret = req.app.locals.secretKey || process.env.JWT_SECRET || 'msged_jwt_secret_key_default_2026';
-  const token = jwt.sign({ username: effectiveUsername }, secret, { expiresIn: '10m' });
+  const token = jwt.sign({ username: effectiveUsername }, secret, { expiresIn: process.env.JWT_EXPIRES_IN || '24h' });
   const newSession = {
     date: new Date(Date.now()), 
     username: effectiveUsername, 
@@ -740,18 +754,35 @@ router.get('/list',authenticateToken, (req, res) => {
     {
       return res.status(404).json({ message: 'User not found' });
     }
-    if(user.accountType == "admin" && req.app.locals.users)
-      res.status(200).json({ users: req.app.locals.users.map(user2 => Object.fromEntries(Object.entries(user2).filter(([key])=> (key != 'password' && key != 'accessPassword')))) });
-    else if(user.accountType != "admin" && req.app.locals.users)
-    {
-      res.status(200).json({ users: req.app.locals.users.filter(user2 =>
-         user2.room && user2.room.startsWith(user.room))
-         .map(user2 => Object.fromEntries(Object.entries(user2).filter(([key])=> (key != 'password' && key != 'accessPassword')))) });
-    } 
-    else
-    {
-      res.status(500).json({ message: 'User data not available' });
+    if (!req.app.locals.users) {
+      return res.status(500).json({ message: 'User data not available' });
     }
+
+    const cleanRoom = (r) => (r || '')
+      .replace(/^[\\/]*principal[\\/]*/i, '')
+      .replace(/[\\/]+/g, '/')
+      .trim()
+      .toLowerCase();
+
+    const userDept = cleanRoom(user.room);
+    const isAdmin = user.accountType === 'admin' || user.role === 'admin' || userDept === '';
+
+    let visibleUsers;
+    if (isAdmin) {
+      visibleUsers = req.app.locals.users;
+    } else {
+      visibleUsers = req.app.locals.users.filter(user2 => {
+        if (!user2.room) return false;
+        const otherDept = cleanRoom(user2.room);
+        return otherDept === userDept || (userDept && otherDept.startsWith(userDept)) || (otherDept && userDept.startsWith(otherDept));
+      });
+    }
+
+    const safeUsers = visibleUsers.map(user2 => 
+      Object.fromEntries(Object.entries(user2).filter(([key])=> (key != 'password' && key != 'accessPassword')))
+    );
+
+    res.status(200).json({ users: safeUsers });
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
@@ -994,6 +1025,178 @@ router.put('/admin/account-keys', authenticateToken, (req, res) => {
   } catch (err) {
     console.error('Error updating account keys:', err);
     res.status(500).json({ message: 'Erreur lors de la mise à jour des clés de sécurité' });
+  }
+});
+
+// Admin endpoint: Fetch rate limiter configuration and stats
+router.get('/admin/rate-limit', authenticateToken, (req, res) => {
+  try {
+    const username = req.user.username;
+    const currentUser = req.app.locals.users?.find(u => u.username === username);
+    const isTopAdmin = username === 'MMDev-39' || req.user?.role === 'itadmin' || (currentUser && (currentUser.accountType === 'admin' || currentUser.type === 'secret'));
+
+    if (!isTopAdmin) {
+      return res.status(403).json({ message: 'Accès réservé à l\'administrateur principal.' });
+    }
+
+    const rateLimiterModule = req.app.locals.rateLimiter || require('./rateLimiter');
+    res.status(200).json({
+      config: rateLimiterModule.getConfig(),
+      stats: rateLimiterModule.getStats()
+    });
+  } catch (err) {
+    console.error('Error fetching rate limiter config:', err);
+    res.status(500).json({ message: 'Erreur lors de la récupération des paramètres de limitation de débit.' });
+  }
+});
+
+// Admin endpoint: Update rate limiter configuration
+router.put('/admin/rate-limit', authenticateToken, (req, res) => {
+  try {
+    const username = req.user.username;
+    const currentUser = req.app.locals.users?.find(u => u.username === username);
+    const isTopAdmin = username === 'MMDev-39' || req.user?.role === 'itadmin' || (currentUser && (currentUser.accountType === 'admin' || currentUser.type === 'secret'));
+
+    if (!isTopAdmin) {
+      return res.status(403).json({ message: 'Accès réservé à l\'administrateur principal.' });
+    }
+
+    const rateLimiterModule = req.app.locals.rateLimiter || require('./rateLimiter');
+    const updatedConfig = rateLimiterModule.updateConfig(req.body);
+
+    console.log(`[RateLimiter] Configuration updated by top admin "${username}"`);
+
+    res.status(200).json({
+      message: 'Configuration du limiteur de débit mise à jour avec succès.',
+      config: updatedConfig,
+      stats: rateLimiterModule.getStats()
+    });
+  } catch (err) {
+    console.error('Error updating rate limiter config:', err);
+    res.status(500).json({ message: 'Erreur lors de la mise à jour des paramètres de limitation de débit.' });
+  }
+});
+
+// Admin endpoint: Reset rate limiter counters
+router.post('/admin/rate-limit/reset', authenticateToken, (req, res) => {
+  try {
+    const username = req.user.username;
+    const currentUser = req.app.locals.users?.find(u => u.username === username);
+    const isTopAdmin = username === 'MMDev-39' || req.user?.role === 'itadmin' || (currentUser && (currentUser.accountType === 'admin' || currentUser.type === 'secret'));
+
+    if (!isTopAdmin) {
+      return res.status(403).json({ message: 'Accès réservé à l\'administrateur principal.' });
+    }
+
+    const rateLimiterModule = req.app.locals.rateLimiter || require('./rateLimiter');
+    const result = rateLimiterModule.resetStats();
+
+    console.log(`[RateLimiter] Tracking counters reset by top admin "${username}"`);
+
+    res.status(200).json({
+      message: result.message,
+      stats: rateLimiterModule.getStats()
+    });
+  } catch (err) {
+    console.error('Error resetting rate limiter counters:', err);
+    res.status(500).json({ message: 'Erreur lors de la réinitialisation des compteurs de limitation de débit.' });
+  }
+});
+
+
+// Admin endpoint: Reset a user's password to default '0000' with optional email notification
+router.post('/admin/reset-password', authenticateToken, async (req, res) => {
+  try {
+    const adminUsername = req.user.username;
+    const currentAdmin = req.app.locals.users?.find(u => u.username === adminUsername);
+    const isAdmin = adminUsername === 'MMDev-39' || 
+                    req.user?.role === 'itadmin' || 
+                    req.user?.role === 'admin' || 
+                    (currentAdmin && (currentAdmin.accountType === 'admin' || currentAdmin.type === 'secret'));
+
+    if (!isAdmin) {
+      return res.status(403).json({ message: "Accès réservé aux administrateurs." });
+    }
+
+    const { targetUsername, sendNotificationEmail } = req.body;
+    if (!targetUsername || typeof targetUsername !== 'string') {
+      return res.status(400).json({ message: "Nom d'utilisateur cible manquant ou invalide." });
+    }
+
+    if (!req.app.locals.users || !Array.isArray(req.app.locals.users)) {
+      return res.status(500).json({ message: "Base de données utilisateurs indisponible." });
+    }
+
+    const targetUser = req.app.locals.users.find(u => u.username === targetUsername);
+    if (!targetUser) {
+      return res.status(404).json({ message: "L'utilisateur " + targetUsername + " est introuvable." });
+    }
+
+    // Default password as requested
+    const defaultPassword = "0000";
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    // Update password
+    targetUser.password = hashedPassword;
+
+    // Update session if user is logged in
+    if (req.app.locals.sessions && Array.isArray(req.app.locals.sessions)) {
+      const userSession = req.app.locals.sessions.find(s => s.username === targetUsername);
+      if (userSession) {
+        userSession.password = hashedPassword;
+      }
+    }
+
+    // Persist to users.json
+    fs.writeFileSync("./modules/Data/users.json", JSON.stringify(req.app.locals.users.map(u => {
+      let clone = { ...u };
+      delete clone["partners"];
+      return clone;
+    }), null, 2), "utf8");
+
+    // Sync to MongoDB
+    try {
+      db.saveUserToDB(targetUser);
+    } catch (dbErr) {
+      console.warn('[MongoDB Sync Warning]', dbErr.message);
+    }
+
+    // Send email notification if requested and email exists
+    let emailSent = false;
+    let emailError = null;
+    if (sendNotificationEmail && targetUser.email) {
+      try {
+        await nodemailerCustom.sendPasswordResetMail(targetUser.email, targetUser.username, defaultPassword, adminUsername);
+        emailSent = true;
+        console.log("[Admin Password Reset] Email sent to " + targetUser.email + " for user " + targetUsername + " by admin " + adminUsername);
+      } catch (mailErr) {
+        console.error("[Admin Password Reset Email Error]", mailErr);
+        emailError = mailErr.message;
+      }
+    }
+
+    // Broadcast room update if applicable
+    const command = {
+      entryparams: { fieldName: "user_info", operation: "password_reset" },
+      command: { username: targetUsername }
+    };
+    try {
+      allRoomUpdated(req, command);
+    } catch (e) {}
+
+    console.log("[Admin Password Reset] Password for " + targetUsername + " reset to " + defaultPassword + " by " + adminUsername + ". Email notified: " + emailSent);
+
+    res.status(200).json({
+      success: true,
+      message: "Le mot de passe de " + targetUsername + " a été réinitialisé à " + defaultPassword + " avec succès.",
+      username: targetUsername,
+      emailSent,
+      hasEmail: !!targetUser.email,
+      emailError
+    });
+  } catch (err) {
+    console.error("Error during admin password reset:", err);
+    res.status(500).json({ message: "Erreur lors de la réinitialisation du mot de passe." });
   }
 });
 

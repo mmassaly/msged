@@ -10,10 +10,48 @@ const retrievalRoutes = require('./modules/retrievals').router;
 const db = require('./modules/db');
 const fs = require('fs');
 const path = require('path');
+const rateLimiter = require('./modules/rateLimiter');
 
 const app = express(); 
 const PORT = process.env.PORT || 3039;
 
+/*
+// ==============================================================================
+// CORS Configuration (Disabled for VPS / Production with Nginx Reverse Proxy)
+// In production on the VPS, Nginx handles CORS. Having Node also send CORS headers
+// produces duplicate CORS headers which browsers reject.
+// Uncomment locally when running without an Nginx reverse proxy.
+// ==============================================================================
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept, Origin, X-Requested-With, Range');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range, Accept-Ranges, Content-Length, Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+    }
+    next();
+});
+
+const corsOptions = {
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "Range"],
+    exposedHeaders: ["Content-Range", "X-Content-Range", "Accept-Ranges", "Content-Length", "Content-Type"]
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+*/
+
+app.locals.rateLimiter = rateLimiter;
 app.locals.users = []; // Temporary in-memory user storage
 app.locals.sessions = [];
 app.locals.roomDic = process.env.roomDic;
@@ -46,6 +84,25 @@ db.connectDB().then(async () => {
     if (dbUsers && dbUsers.length > 0) {
         app.locals.users = dbUsers;
         console.log(`[MongoDB] Synchronized ${dbUsers.length} users from MongoDB`);
+
+        // Automatic Disaster Recovery:
+        // If users.json was deleted or corrupted during a deployment/pull, restore it from MongoDB!
+        try {
+            const dataDir = path.dirname(usersJsonPath);
+            if (!fs.existsSync(dataDir)) {
+                fs.mkdirSync(dataDir, { recursive: true });
+            }
+            if (!fs.existsSync(usersJsonPath) || fs.readFileSync(usersJsonPath, 'utf8').trim().length <= 2) {
+                fs.writeFileSync(usersJsonPath, JSON.stringify(dbUsers.map(u => {
+                    let clone = { ...u };
+                    delete clone.partners;
+                    return clone;
+                }), null, 2), 'utf8');
+                console.log(`[MongoDB Recovery] Regenerated ${usersJsonPath} automatically from MongoDB database`);
+            }
+        } catch (recoverErr) {
+            console.warn('[MongoDB Recovery Warning]', recoverErr.message);
+        }
     }
 }).catch(err => {
     console.error('[MongoDB Startup Error]', err);
@@ -176,11 +233,6 @@ if(userPartnersStr !== undefined)
 else
     app.locals.userPartners = {};
 console.trace(app.locals.partnersDicReverse);
-// app.use(cors({
-//     origin: "*",
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//     allowedHeaders: ["Authorization", "Content-Type"],
-// }));
 
 directoryRoutes.mapDirectory("./","principal","",{app},true);
 // const files = fs.readdirSync('./');
@@ -191,6 +243,9 @@ directoryRoutes.mapDirectory("./","principal","",{app},true);
 
 /*fs.writeFileSync(path.join(__dirname, 'modules', 'Data', 'roomDic.json'), JSON.stringify(app.locals.roomDic));
 */
+// Rate Limiter middleware
+app.use(rateLimiter.apiLimiter);
+
 // File upload routes
 app.use('/api/upload', fileUploadRoutes);
 

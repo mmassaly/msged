@@ -1,5 +1,7 @@
 node_modules/
+Data/
 modules/Data/
 modules/NewData/
 principal/
 .env
+*.log
